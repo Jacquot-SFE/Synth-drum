@@ -12,6 +12,7 @@
 *.o
 *.srec
 *.map
+*.hex
 
 ## Notepad++ backup files
 *.bak

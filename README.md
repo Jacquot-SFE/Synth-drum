@@ -11,3 +11,7 @@ So far, so good, but a couple quirks discovered:
 This is very much "WIP," and could change significantly in the near future.
 
 Once things stabilize, I'll add some notes about the extra hardware added. 
+
+---
+
+Some instiration drawn from tom Wiltshire's [VCADSR](http://www.electricdruid.net/index.php?page=projects.envgen7)
