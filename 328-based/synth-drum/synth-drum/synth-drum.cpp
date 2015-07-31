@@ -24,13 +24,19 @@
 
 
 // constants
-static const uint8_t wavetable [1][65] = 
+static const int8_t wavetable [1][65] = 
 {
 	// The first entry repeats in the last so that "phasor + 1" lookup is valid.
-	
+#if 0	
 	// sine:
 	{127,139,152,164,176,187,198,208,217,225,233,239,244,249,252,253,254,253,252,249,244,239,233,225,217,208,198,187,176,164,152,139,
 	 127,115,102, 90, 78, 67, 56, 46, 37, 29, 21, 15, 10,  5,  2,  1,  0,  1,  2,  5, 10, 15, 21, 29, 37, 46, 56, 67, 78, 90,102,115,127},
+#else
+	{0, 12, 25, 37, 49, 60, 71, 81, 90,	98, 106, 112, 117, 122, 125, 126, 127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12, 0,
+	-12,-25,-37,-49,-60,-71,-81,-90,-98,-106,-112,-117,-122,-125,-126,-127,-126,-125,-122,-117,-112,-106,-98,-90,-81,-71,-60,-49,-37,-25,-12, 0	
+	},
+#endif	 
+	 
 };
 
 
@@ -50,9 +56,9 @@ void setupDebugPins()
 
 #if 1
 // do 4 extra bits of linear interpolation between a and b.
-int16_t linterp16(uint16_t a,
-                  uint16_t b,
-                  uint8_t dist)
+int16_t linterp16(int16_t a,
+                  int16_t b,
+                  int8_t dist)
 {
     volatile int16_t window;
 
@@ -107,7 +113,7 @@ void setupClocks()
 
 uint8_t waveLookup()
 {
-	uint8_t l, r, dist;
+	int8_t l, r, dist;
 	
 	// Wave table are 64 entries long, 
 	// phasor is unsigned 16 bits
@@ -129,10 +135,13 @@ ISR(TIMER0_COMPA_vect)
 	PINB = 0x01;
 	
 	uint16_t math;
-	uint8_t  sample;
+	int8_t  sample;
 	
 	// Increment phasor
 	phasor += 0x0100;
+	//phasor += 0x0200;
+	//phasor += (env >> 5);
+	phasor += (env >> 6);
 	
 	//lookup value
 	sample = waveLookup();
@@ -151,10 +160,13 @@ ISR(TIMER0_COMPA_vect)
 	}
 
 	// Apply envelope to latest sample.
-	math = sample * (env >> 8);		
-
+	math = ( sample * (env >> 8));		
 	// write the value to the output
-	writeDAC(math >> 8);
+#if 1
+	writeDAC((math >> 8) + 128);
+#else
+	writeDAC(sample + 128);
+#endif
 
 	PINB = 0x01;
 }
@@ -201,7 +213,8 @@ int main(void)
 		// canary in coalmine idle wiggle
 		PINB = 0x02;
 		
-		for(pause = 0; pause < 0x1fffff; pause++)
+//		for(pause = 0; pause < 0x1fffff; pause++)
+		for(pause = 0; pause < 0x07ffff; pause++)
 		{
 			PINB = 0x02;
 			// We can't disable interrupts from ISR, because the ISR exit
@@ -211,13 +224,14 @@ int main(void)
 			// TODO: try it with a "naked" isr?
 			if(env == 0x0)
 			{
-			//	cli();
+				cli();
 			}
 		}
 			
 		// for now, auto-trigger the envelope
 		// By setting the peak level, and enabling ISRs
 		env = 0xffff;
-		//sei();
+		phasor = 0 ;
+		sei();
     }
 }
