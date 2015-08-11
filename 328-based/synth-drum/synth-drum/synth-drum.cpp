@@ -147,17 +147,12 @@ ISR(TIMER0_COMPA_vect)
 	sample = waveLookup();
 	
 	// Calc next envelope
-	if(env > 4095)
-	{
-		//env--;
-		//env -= 6;
-		
-		env -= (env>>12);
-	}
-	else if(env > 0)
-	{
-		env -= 5;
-	}
+	// 16-bit fixed point multiply...
+	// 16 times 16 makes 32 bits...with 16 bits in the MSBs.
+	// IE: 0xffff * 0xfff0 = 0xffef0010
+	uint32_t res;
+	res = env * (uint32_t)0xfffeUL;
+	env = res >> 16;
 
 	// Apply envelope to latest sample.
 	math = ( sample * (env >> 8));		
