@@ -44,7 +44,7 @@ static const int8_t wavetable [1][65] =
 static uint16_t phasor = 0;
 static uint16_t env = 0;
 
-
+static uint8_t pot_data[6];
 
 // If I'm wiggling pins for debug, configure them here...
 void setupDebugPins()
@@ -138,10 +138,14 @@ ISR(TIMER0_COMPA_vect)
 	int8_t  sample;
 	
 	// Increment phasor
-	phasor += 0x0100;
-	//phasor += 0x0200;
-	//phasor += (env >> 5);
-	phasor += (env >> 6);
+//	phasor += 0x0080;
+	phasor += (pot_data[0] << 3)+ 0x80;
+
+	// Apply pitch envelope...
+//	phasor += (env >> 6);
+	uint16_t pitch_mod;
+	pitch_mod = ((env >> 8) * pot_data[4])>> 4;
+	phasor+= (pitch_mod);
 	
 	//lookup value
 	sample = waveLookup();
@@ -151,7 +155,7 @@ ISR(TIMER0_COMPA_vect)
 	// 16 times 16 makes 32 bits...with 16 bits in the MSBs.
 	// IE: 0xffff * 0xfff0 = 0xffef0010
 	uint32_t res;
-	res = env * (uint32_t)0xfffeUL;
+	res = env * (uint32_t)(0xff00UL + pot_data[3]);
 	env = res >> 16;
 
 	// Apply envelope to latest sample.
@@ -160,6 +164,7 @@ ISR(TIMER0_COMPA_vect)
 #if 1
 	writeDAC((math >> 8) + 128);
 #else
+	
 	writeDAC(sample + 128);
 #endif
 
@@ -184,6 +189,52 @@ void setupTimer0()
 	
 }
 
+void setupADC()
+{
+	
+}
+
+uint8_t readADC(uint8_t channel)
+{
+	uint16_t value;
+	
+	// only allow the pins we've selected to read...
+	if(channel >= 6)
+	{
+		// catch for attempt to read invalid channel.
+		while(1);
+	}
+	
+	// turn on adc
+	// TODO: perhaps turn on and leave on?
+	ADCSRA = 0x86; // power bit, prescale of 64
+	
+	ADCSRB |= 0x00; // not option to left justify
+	
+	// set digital input disable
+	DIDR0 = 0x3f;
+	
+	// input mux, vref selection
+	// Left justified, AVcc reference
+	ADMUX = channel | 0x60;
+
+	// pause a moment...
+//	for(volatile uint8_t i = 0xff; i != 0; i--);
+	
+	// bit 6 starts conversion
+	// bit 4 clears IRQ flag
+	ADCSRA |= 0x50;
+	
+	// start bit clears when complete
+	// watching the interrupt flag
+	while(ADCSRA & 0x40);
+
+	value = ADCH;
+	
+    return (value);
+	
+}
+
 int main(void)
 {
 	
@@ -194,8 +245,17 @@ int main(void)
 	setupClocks();
 	
 	setupDAC();
+	
+	setupADC();
 
 	setupTimer0();
+		
+	// initialize panel data by reading all controls one time
+	for(uint8_t idx = 0; idx < 6; idx++)
+	{
+		pot_data[idx] = readADC(idx);
+	}
+		
 		
 	// enable interrupts
 	sei();
@@ -209,9 +269,14 @@ int main(void)
 		PINB = 0x02;
 		
 //		for(pause = 0; pause < 0x1fffff; pause++)
-		for(pause = 0; pause < 0x07ffff; pause++)
+		for(pause = 0; pause < 0x01fff/*f*/; pause++)
 		{
 			PINB = 0x02;
+			
+			uint8_t channel = pause%6;
+			pot_data[channel] = readADC(channel);
+			
+			
 			// We can't disable interrupts from ISR, because the ISR exit
 			// re-enables them regardless.  So we'll watch the env, and when it's done, 
 			// stop them.
