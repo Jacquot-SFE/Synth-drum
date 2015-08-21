@@ -52,6 +52,7 @@ static const int8_t wavetable [3][129] =
 
 // module-level variables
 static uint16_t phasor = 0;
+static uint16_t lfsr = 1;
 static uint16_t env = 0;
 
 static uint8_t pot_data[6];
@@ -85,18 +86,17 @@ int16_t linterp16(int16_t a,
 }
 #endif
 
-#if 0
-uint8_t linterp8(uint8_t a, uint8_t b, uint8_t dist)
+
+uint8_t do_lfsr()
 {
-	int16_t window = b - a;
+
+	uint8_t bit;
 	
-	window *= dist;
+	// pulled straight out of wikipedia...
 	
-	window >>= 4;
-	
-	return window;
+	bit = (((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1);
+	lfsr =  (lfsr >> 1) | (bit << 15);
 }
-#endif
 
 // Functionalized and modular so it can get broken up
 // across port pins without too much trouble.
@@ -157,6 +157,7 @@ ISR(TIMER0_COMPA_vect)
 	
 	uint16_t math;
 	int8_t  sample;
+	uint8_t noise;
 	
 	// Increment phasor
 //	phasor += 0x0080;
@@ -170,6 +171,14 @@ ISR(TIMER0_COMPA_vect)
 	
 	//lookup value
 	sample = waveLookup();
+	
+	// generate noise
+	noise = do_lfsr();
+	
+	// crossfade samp to noise w/ pot [1]
+	sample = ((sample* (255-pot_data[1]))>>9) +
+			 ((noise * (pot_data[1]))>>9);
+	
 	
 	// Calc next envelope
 	// 16-bit fixed point multiply...
@@ -290,7 +299,7 @@ int main(void)
 		PINB = 0x02;
 		
 //		for(pause = 0; pause < 0x1fffff; pause++)
-		for(pause = 0; pause < 0x01fff/*f*/; pause++)
+		for(pause = 0; pause < 0x03fff/*f*/; pause++)
 		{
 			PINB = 0x02;
 			
