@@ -5,6 +5,34 @@
  *  Author: byron.jacquot
  */ 
 
+/*	
+* Features? (I had these in a couple of notebooks,
+* bringing in consolidated list)
+*
+* (+ indicates something attempted & incorporated, 
+*  - indicates unexplored 
+*  . indicates attempted, not terribly useful)
+*
+* + pitch control
+* + decay control
+* + env mod of pitch
+- + multipe waheshapes
+* - bipolar pitch modulation (or inverse switch)
+* - decay shape (lin/log/exp...)
+* + white noise
+* - longer LFSR
+* . 2nd pitch
+* - chorus
+* - 2nd env - run generator
+* - LFO
+* - S&H
+* - filter
+* - stereo, panning
+* - click
+* - env hold time
+* - bit crush
+*/
+
 /*
  * port pin mapping?
  *
@@ -16,6 +44,20 @@
  * portD = Parallel outs for R2R DAC...but it'll cost me the hardware serial...
  *
  */
+
+/*
+ * Knob mapping?
+ * currently using Arduino A0 to A5
+ *
+ * 0 - osc oitch
+ * 1 - osc/noise crossfade
+ * 2 - waveshape
+ * 3 - decay
+ * 4 - env->pitch mod
+ * 5 - ??
+ */
+
+
  
 
 
@@ -57,6 +99,10 @@ static const int8_t wavetable [3][129] =
 //saw	
 	 
 };
+
+// Forward declarations
+void startTimer0();
+void stopTimer0();
 
 
 // module-level variables
@@ -102,6 +148,8 @@ uint8_t do_lfsr()
 	uint8_t bit;
 	
 	// pulled straight out of wikipedia...
+	// https://en.wikipedia.org/wiki/Linear_feedback_shift_register
+	// Stated period of 65535, @ 20KHz = ~3 sec
 	
 	bit = (((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5) ) & 1);
 	lfsr =  (lfsr >> 1) | (bit << 15);
@@ -121,6 +169,30 @@ void setupDAC()
 {
 	// set a 1 to enable as output
 	DDRD = 0xff;
+	
+}
+
+void setupExtInIRQ()
+{
+	//Setup portB, pin 5 as pin change interrupt?
+	// 0 in DDRB makes pin input
+	DDRB &= ~0x20;
+	// 0 in DDR and 1 in port enabled pullup
+	PORTB |= 0x20;
+	
+	// disable pullups??
+	
+	
+	// Enable interrupt on pin change 5
+	PCMSK0 |= 0x20;
+	
+	// Clear any pending interrupt on that group...
+	PCIFR = 0;
+	
+	// Enable pin change group zero
+	PCICR = 1;
+	
+	
 }
 
 void setupClocks()
@@ -133,7 +205,7 @@ void setupClocks()
 	CLKPR = 0x00; // clk div 2 = 8 MHz.
 }
 
-uint8_t waveLookup()
+uint8_t waveLookup(uint16_t pha)
 {
 	int8_t l, r, dist;
 	uint8_t wavesel;
@@ -147,13 +219,13 @@ uint8_t waveLookup()
 	if(wavesel == 3)
 	{
 		// return top 8 of phasor as saw
-		return(phasor>>8);
+		return(pha>>8);
 	}
 	else
 	{
-		l = wavetable[wavesel][phasor >> 9];
-		r = wavetable[wavesel][((phasor >> 9)+1)];
-		dist = (phasor & 0x01e0) >> 5;
+		l = wavetable[wavesel][pha >> 9];
+		r = wavetable[wavesel][((pha >> 9)+1)];
+		dist = (pha & 0x01e0) >> 5;
 	
 		return linterp16(l,r,dist);	
 	}
@@ -171,18 +243,17 @@ ISR(TIMER0_COMPA_vect)
 	int8_t  sample;
 	int8_t noise;
 	
-	// Increment phasor
-//	phasor += 0x0080;
+	// Increment phasors
 	phasor += (pot_data[0] << 3)+ 0x80;
 
 	// Apply pitch envelope...
-//	phasor += (env >> 6);
-	uint16_t pitch_mod;
+	int16_t pitch_mod;
+		
 	pitch_mod = ((env >> 8) * pot_data[4])>> 4;
 	phasor+= (pitch_mod);
 	
 	//lookup value
-	sample = waveLookup();
+	sample = waveLookup(phasor);
 	
 	// generate noise
 	noise = do_lfsr();
@@ -193,6 +264,7 @@ ISR(TIMER0_COMPA_vect)
 			 ((noise * (pot_data[1]))>>8);
 	//sample >>= 8;
 	
+
 	// Calc next envelope
 	// 16-bit fixed point multiply...
 	// 16 times 16 makes 32 bits...with 16 bits in the MSBs.
@@ -203,15 +275,46 @@ ISR(TIMER0_COMPA_vect)
 
 	// Apply envelope to latest sample.
 	math = ( sample * (env >> 8));		
+
 	// write the value to the output
 #if 1
 	writeDAC((math >> 8) + 128);
 #else
-	
+	// for debugging - just output the waveform, no env
 	writeDAC(sample + 128);
 #endif
 
+	// Stop timer when envelope reaches 0
+	if( !(env & 0xff00))
+	{
+		stopTimer0();
+	}
+
 	PINB = 0x01;
+}
+
+ISR(PCINT0_vect)
+{
+	// Flag auto clears when vector taken
+	
+	// Read pins....
+	volatile uint8_t port;
+	
+	port = PINB;
+	
+	//this does falling edge...
+	//might need to change when piezo comes into play
+	if(!(port & 0x20))
+	{
+		// By setting the peak level, and enabling ISRs
+		env = 0xffff;
+		phasor = 0 ;
+		
+		TCNT0 = 0; // start timer at zero, otherwise IRQ is already pending.
+				// This keeps our sample rate regular, but delays onset by up to 50 uSec.
+		//sei();
+		startTimer0();		
+	}
 }
 
 void setupTimer0()
@@ -230,6 +333,16 @@ void setupTimer0()
 	
 	TIMSK0 = 0x02; // interrupt on match A
 	
+}
+
+void startTimer0()
+{
+	TIMSK0 = 0x02; // interrupt on match A
+}
+
+void stopTimer0()
+{
+	TIMSK0 &= ~0x02; // interrupt on match A
 }
 
 void setupADC()
@@ -291,6 +404,8 @@ int main(void)
 	
 	setupADC();
 
+	setupExtInIRQ();
+
 	setupTimer0();
 		
 	// initialize panel data by reading all controls one time
@@ -327,10 +442,11 @@ int main(void)
 			// TODO: try it with a "naked" isr?
 			if(env == 0x0)
 			{
-				cli();
+				//cli();
 			}
 		}
 			
+#if 0		
 		// for now, auto-trigger the envelope
 		// By setting the peak level, and enabling ISRs
 		env = 0xffff;
@@ -339,5 +455,6 @@ int main(void)
 		TCNT0 = 0; // start timer at zero, otherwise IRQ is already pending.
 				// This keeps our sample rate regular, but delays onset by up to 50 uSec.
 		sei();
+#endif		
     }
 }
