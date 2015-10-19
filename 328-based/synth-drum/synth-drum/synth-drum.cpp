@@ -39,9 +39,10 @@
  * Rudimentary for now...
  *
  * PortA
- * portB
+ * portB = Pin B5 is pin change IRQ for triggering
+ *       = Pins 0..3 are MSBs of R2R DAC
  * portC = Arduino analog inputs 0 - 5...
- * portD = Parallel outs for R2R DAC...but it'll cost me the hardware serial...
+ * portD = Parallel outs LSBs of R2R DAC...but it'll cost me the hardware serial...
  *
  */
 
@@ -49,7 +50,7 @@
  * Knob mapping?
  * currently using Arduino A0 to A5
  *
- * 0 - osc oitch
+ * 0 - osc pitch
  * 1 - osc/noise crossfade
  * 2 - waveshape
  * 3 - decay
@@ -63,6 +64,9 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
+// Config macros
+#define SELF_TRIGGER 1
 
 
 // constants
@@ -117,7 +121,7 @@ void setupDebugPins()
 {
 	// PB0 = Arduino 8
 	// PB1 = Arduino 9
-	DDRB = 0x03;
+	//DDRB = 0x03;
 }
 
 #if 1
@@ -160,20 +164,29 @@ uint8_t do_lfsr()
 
 // Functionalized and modular so it can get broken up
 // across port pins without too much trouble.
-void writeDAC(uint8_t data_out)
+void writeDAC(uint16_t data_out)
 {
-	PORTD = data_out;
+	// 12 bit DAC now.
+	// 4 LSBs are port B 3..0.
+	// 8 LSBs are pord D 7..0.
+	//PORTD = data_out;
+	
+	PORTB = (PORTB & 0xf0) | (data_out >> 8);
+	PORTD = (data_out & 0x0ff);
 }
 
 void setupDAC()
 {
 	// set a 1 to enable as output
 	DDRD = 0xff;
+	DDRB = 0x0f;
 	
 }
 
 void setupExtInIRQ()
 {
+	
+#if (SELF_TRIGGER == 0)	
 	//Setup portB, pin 5 as pin change interrupt?
 	// 0 in DDRB makes pin input
 	DDRB &= ~0x20;
@@ -191,7 +204,7 @@ void setupExtInIRQ()
 	
 	// Enable pin change group zero
 	PCICR = 1;
-	
+#endif	
 	
 }
 
@@ -237,7 +250,7 @@ ISR(TIMER0_COMPA_vect)
 		
 	// Pin wiggle for debug...
 	// writing 1's to PIN reg toggles pin.
-	PINB = 0x01;
+//	PINB = 0x01;
 	
 	uint16_t math;
 	int8_t  sample;
@@ -278,7 +291,9 @@ ISR(TIMER0_COMPA_vect)
 
 	// write the value to the output
 #if 1
-	writeDAC((math >> 8) + 128);
+	//writeDAC((math >> 8) + 128);
+	writeDAC((math >> 4) + 2048);
+	//writeDAC((math >> 4) + 2048);
 #else
 	// for debugging - just output the waveform, no env
 	writeDAC(sample + 128);
@@ -290,7 +305,7 @@ ISR(TIMER0_COMPA_vect)
 		stopTimer0();
 	}
 
-	PINB = 0x01;
+//	PINB = 0x01;
 }
 
 ISR(PCINT0_vect)
@@ -424,12 +439,12 @@ int main(void)
 		//writeDAC(count);
 
 		// canary in coalmine idle wiggle
-		PINB = 0x02;
+//		PINB = 0x02;
 		
 //		for(pause = 0; pause < 0x1fffff; pause++)
 		for(pause = 0; pause < 0x03fff/*f*/; pause++)
 		{
-			PINB = 0x02;
+			//PINB = 0x02;
 			
 			uint8_t channel = pause%6;
 			pot_data[channel] = readADC(channel);
@@ -446,7 +461,7 @@ int main(void)
 			}
 		}
 			
-#if 0		
+#if (SELF_TRIGGER == 1)
 		// for now, auto-trigger the envelope
 		// By setting the peak level, and enabling ISRs
 		env = 0xffff;
@@ -454,7 +469,7 @@ int main(void)
 		
 		TCNT0 = 0; // start timer at zero, otherwise IRQ is already pending.
 				// This keeps our sample rate regular, but delays onset by up to 50 uSec.
-		sei();
+		startTimer0();
 #endif		
     }
 }
