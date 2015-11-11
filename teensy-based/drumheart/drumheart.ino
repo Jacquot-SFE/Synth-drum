@@ -8,13 +8,14 @@
 
 // GUItool: begin automatically generated code
 //AudioSynthNoiseWhite     noise1;         //xy=573,86
-AudioSynthWaveformSineModulated sine_fm1;
+//AudioSynthWaveformSineModulated sine_fm1;
 AudioSynthDrumHeart decay1;
 AudioEffectMultiply mult1;
 AudioOutputI2S           i2s1;           //xy=968,448
 
-AudioConnection          patchCord1(sine_fm1, 0, mult1, 0);
-AudioConnection          patchCord2(decay1, 0, mult1, 1);
+//AudioConnection          patchCord1(sine_fm1, 0, mult1, 0);
+AudioConnection          patchCord1(decay1, 0, mult1, 0);
+AudioConnection          patchCord2(decay1, 1, mult1, 1);
 AudioConnection          patchCord3(mult1, 0, i2s1, 0);
 AudioConnection          patchCord4(mult1, 0, i2s1, 1);
 
@@ -40,7 +41,7 @@ void setup() {
 
   //noise1.amplitude(0.5);
 
-  sine_fm1.frequency(220);
+  //sine_fm1.frequency(220);
 
 
   AudioInterrupts();
@@ -55,7 +56,7 @@ void loop() {
 
   AudioNoInterrupts();
   digitalWrite(13, HIGH);
-  sine_fm1.phase(0);
+//  sine_fm1.phase(0);
   decay1.noteOn();
   AudioInterrupts();
 #if 0

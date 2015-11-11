@@ -34,10 +34,22 @@
 class AudioSynthDrumHeart : public AudioStream
 {
 public:
-  AudioSynthDrumHeart() : AudioStream(1, inputQueueArray) {
+  AudioSynthDrumHeart() : AudioStream(1, inputQueueArray) 
+  {
     length(1000);
+    frequency(220);
   }
   void noteOn();
+
+  void frequency(float freq)
+  {
+    if(freq < 0.0)
+      freq = 0;
+    else if(freq > (AUDIO_SAMPLE_RATE_EXACT/2))
+      freq = AUDIO_SAMPLE_RATE_EXACT/2;
+
+    wav_increment = (freq * (0x80000000LL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
+  }
 
   void length(int32_t milliseconds)
   {
@@ -47,7 +59,6 @@ public:
       milliseconds = 5000;
 
     int32_t len_samples = milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0);
-
 
     __disable_irq();    
 
@@ -64,6 +75,10 @@ public:
   int32_t env_lin_current; // present value of linear slope.
   int32_t env_sqr_current; // the square of the linear value - quasi exponential..
   int32_t env_decrement;   // how each sample deviates from previous.
+
+  // Wavefore params
+  uint32_t wav_phasor;     // 
+  uint32_t wav_increment;
 
 private:
   audio_block_t *inputQueueArray[1];

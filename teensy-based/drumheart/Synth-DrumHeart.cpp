@@ -27,9 +27,20 @@
 #include "Synth-DrumHeart.h"
 
 
+// waveforms.c
+extern "C" {
+extern const int16_t AudioWaveformSine[257];
+}
+
+
 void AudioSynthDrumHeart::noteOn(void)
 {
   __disable_irq();
+
+  if(env_lin_current < 0x0ffff)
+  {
+    wav_phasor = 0;
+  }
 
   env_lin_current = 0x7fff0000;
   
@@ -38,40 +49,52 @@ void AudioSynthDrumHeart::noteOn(void)
 
 void AudioSynthDrumHeart::update(void)
 {
-  audio_block_t *block;
-  int16_t *p, *end;
+  audio_block_t *block_wav, *block_env;
+  int16_t *p_wave, *p_env, *end;
   int32_t samp;
-  int32_t mul;
   //uint32_t remaining, mul, sample12, tmp1, tmp2;
 
   //block = receiveWritable();
-  block = allocate();
-  if (!block) return;
 
-  p = (block->data);
-  end = p + AUDIO_BLOCK_SAMPLES;
+  block_env = allocate();
+  if (!block_env) return;
+  p_env = (block_env->data);
+  end = p_env + AUDIO_BLOCK_SAMPLES;
 
-  while(p < end)
+  block_wav = allocate();
+  if (!block_wav) return;
+  p_wave = (block_wav->data);
+
+  while(p_env < end)
   {
-
+    // Do envelope first
     if(env_lin_current < 0x0000ffff)
     {
-      *p = 0;
+      *p_env = 0;
     }
     else
     {
-      samp = *p;
+      samp = *p_env;
 
       env_lin_current -= env_decrement;
       env_sqr_current = multiply_16tx16t(env_lin_current, env_lin_current) ;
-      *p = env_sqr_current>>15;
+      *p_env = env_sqr_current>>15;
     }  
 
-   p++;
+    // do wave second;
+    *p_wave = wav_phasor >> 15;
+    wav_phasor += wav_increment;
+    wav_phasor &= 0x7fffffff;
+
+    p_env++;
+    p_wave++;
  }
 
-  transmit(block);
-  release(block);
+  transmit(block_env, 0);
+  release(block_env);
+  
+  transmit(block_wav, 1);
+  release(block_wav);
 
 }
 
