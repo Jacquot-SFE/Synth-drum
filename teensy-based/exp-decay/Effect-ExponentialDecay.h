@@ -35,29 +35,39 @@ class AudioEffectExponentialDecay : public AudioStream
 {
 public:
   AudioEffectExponentialDecay() : AudioStream(1, inputQueueArray) {
-    coefficent(0xfff8);
+    length(1000);
   }
   void noteOn();
 
-  void coefficent(uint16_t c) {
-    //if (level < 0.0) level = 0;
-    //else if (level > 1.0) level = 1.0;
-    //sustain_mult = level * 65536.0;
-    coeff = c;
-  }
+  void length(int32_t milliseconds)
+  {
+    if(milliseconds < 0)
+      return;
+    if(milliseconds > 5000)
+      milliseconds = 5000;
 
+    int32_t len_samples = milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0);
+
+
+    __disable_irq();    
+
+    increment = (0x7fff0000/len_samples);
+    
+    __enable_irq();    
+  };
+  
   using AudioStream::release;
   virtual void update(void);
 
-  // temporarily public...
-  int32_t  mult;   // attenuation, 0=off, 0x10000=unity gain
-
+  // public for debug...
+  int32_t current; // present value
+  int32_t increment; // (actually, decrement, how each sample deviates from previous.)
 
 private:
   audio_block_t *inputQueueArray[1];
-  // state
-  // settings
-  uint32_t coeff; // decay coefficent
+
+  //int32_t current; // present value
+  //int32_t increment; // (actually, decrement, how each sample deviates from previous.)
 
 };
 

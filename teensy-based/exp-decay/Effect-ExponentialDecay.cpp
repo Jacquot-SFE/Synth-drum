@@ -31,7 +31,7 @@ void AudioEffectExponentialDecay::noteOn(void)
 {
   __disable_irq();
 
-  mult = 0x10000;
+  current = 0x7fff0000;
   
   __enable_irq();
 }
@@ -40,43 +40,80 @@ void AudioEffectExponentialDecay::update(void)
 {
   audio_block_t *block;
   uint32_t *p, *end;
-  //int16_t *p, *end;
-  int16_t temp;
-  //uint32_t sample12, sample34, sample56, sample78, tmp1, tmp2;
-  uint32_t sample12, tmp1, tmp2;
+  uint32_t remaining, mul, sample12, tmp1, tmp2;
 
   block = receiveWritable();
   if (!block) return;
 
   p = (uint32_t *)(block->data);
   end = p + AUDIO_BLOCK_SAMPLES/2;
-  //p = block->data;
-  //end = p + AUDIO_BLOCK_SAMPLES;
 
-  // process all samples
-  while (p < end) 
+  if(current < 0x0000ffff)
   {
-    // try the naive implementation to begin...
-    mult = ((uint32_t)mult * coeff) >> 16;
-    //mult -= 100;
+    current = 0;
+    while (p < end) 
+    {
+      *p = pack_16t_16t(current, current);
+      p++;
+    }
+  }
+  else
+  {
+    remaining = current / increment;
 
-#if 0
-    // 2.76%
-    temp = *p;
-    temp = ((temp * mult) >> 16) & 0x0ffff;
-    *p = temp;
-    p++;
-#else
-  //2.2%...
-  // Borrowed from the envelope class
-    sample12 = *p++;
-    p -= 1;
-    tmp1 = signed_multiply_32x16b(mult, sample12);
-    //mult += inc;
-    tmp2 = signed_multiply_32x16t(mult, sample12);
-    sample12 = pack_16b_16b(tmp2, tmp1);
-    *p++ = sample12;
-#endif    
+    if(remaining > 128)
+    {
+      while(p < end)
+      {
+        sample12 = *p;
+        current -= increment;
+        mul = multiply_16tx16t(current, current) ;
+        tmp1 = multiply_16tx16b(mul<<1, sample12);
+        current -= increment;
+        mul = multiply_16tx16t(current, current) ;
+        tmp2 = multiply_16tx16t(mul<<1, sample12);
+        sample12 = pack_16t_16t(tmp2, tmp1);
+        *p = sample12;
+        p++;
+      }
+    }
+    else // less than 128 remaining
+    {
+      while(remaining >= 2)
+      {
+        remaining -= 2;
+        current -= increment;
+        mul = multiply_16tx16t(current, current) ;
+        tmp1 = multiply_16tx16b(mul<<1, sample12);
+        current -= increment;
+        mul = multiply_16tx16t(current, current) ;
+        tmp2 = multiply_16tx16t(mul<<1, sample12);
+        sample12 = pack_16t_16t(tmp2, tmp1);
+        *p = sample12;
+        p++;
+          
+      }
+       
+      if (remaining == 1)
+      {
+        sample12 = *p;
+        current -= increment;
+        mul = multiply_16tx16t(current, current);
+        tmp1 = multiply_16tx16b(mul<<1, sample12);
+        current = 0;
+        tmp2 = 0;
+        sample12 = pack_16t_16t(tmp2, tmp1);
+        *p = sample12;
+        p++;
+      }
+
+      sample12 = 0;
+      while(p < end)
+      {
+        *p = sample12;
+        p++;
+      }
+    }
   }
 
   transmit(block);
