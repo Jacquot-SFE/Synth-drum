@@ -37,7 +37,7 @@ void AudioSynthDrumHeart::noteOn(void)
 {
   __disable_irq();
 
-  if(env_lin_current < 0x0ffff)
+  //if(env_lin_current < 0x0ffff)
   {
     wav_phasor = 0;
   }
@@ -51,7 +51,8 @@ void AudioSynthDrumHeart::update(void)
 {
   audio_block_t *block_wav, *block_env;
   int16_t *p_wave, *p_env, *end;
-  int32_t samp;
+  int32_t sin_l, sin_r, interp;
+  uint32_t index, scale;
   //uint32_t remaining, mul, sample12, tmp1, tmp2;
 
   //block = receiveWritable();
@@ -74,17 +75,26 @@ void AudioSynthDrumHeart::update(void)
     }
     else
     {
-      samp = *p_env;
-
       env_lin_current -= env_decrement;
       env_sqr_current = multiply_16tx16t(env_lin_current, env_lin_current) ;
       *p_env = env_sqr_current>>15;
     }  
 
     // do wave second;
-    *p_wave = wav_phasor >> 15;
+    //*p_wave = wav_phasor >> 15;
     wav_phasor += wav_increment;
     wav_phasor &= 0x7fffffff;
+
+    // then interp'd waveshape
+    index = wav_phasor >> 23; // take top valid 8 bits
+    sin_l = AudioWaveformSine[index];
+    sin_r = AudioWaveformSine[index+1];
+
+    scale = (wav_phasor >> 7) & 0xFFFF;
+    sin_r *= scale;
+    sin_l *= 0xFFFF - scale;
+    interp = (sin_l + sin_r) >> 16;
+    *p_wave = interp;
 
     p_env++;
     p_wave++;

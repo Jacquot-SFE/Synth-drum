@@ -37,7 +37,7 @@ public:
   AudioSynthDrumHeart() : AudioStream(1, inputQueueArray) 
   {
     length(1000);
-    frequency(220);
+    frequency(60);
   }
   void noteOn();
 
@@ -48,7 +48,8 @@ public:
     else if(freq > (AUDIO_SAMPLE_RATE_EXACT/2))
       freq = AUDIO_SAMPLE_RATE_EXACT/2;
 
-    wav_increment = (freq * (0x80000000LL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
+    //wav_increment = (freq * (0x80000000LL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
+    wav_increment = (freq * (0x7fffffffLL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
   }
 
   void length(int32_t milliseconds)
