@@ -42,6 +42,7 @@ void setup() {
   //noise1.amplitude(0.5);
 
   //sine_fm1.frequency(220);
+  decay1.pitchMod(-1000);
 
 
   AudioInterrupts();
@@ -52,7 +53,7 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   uint16_t coeff;
-  uint16_t adc;
+  uint16_t adc, bend;
 
   AudioNoInterrupts();
   digitalWrite(13, HIGH);
@@ -60,23 +61,26 @@ void loop() {
   decay1.noteOn();
   AudioInterrupts();
 #if 0
-  Serial.println(decay1.increment);
+  //Serial.println(decay1.increment);
   for (int i = 0 ; i < 200; i++)
   {
     delay(10);
-    Serial.println(decay1.current, HEX);
+    Serial.println(decay1.wav_pitch_mod, HEX);
   }
 #endif
   delay(1);
   digitalWrite(13, LOW);
-  delay(500);
+  delay(2000);
 
   adc = analogRead(A1);
+  bend = analogRead(A2);
 
   Serial.print("Analog: ");
-  Serial.println(adc, HEX);
+  Serial.print(adc, HEX);
+  Serial.println(bend, HEX);
 
   decay1.length((adc * 2) + 50);
+  decay1.pitchMod(bend);
   //decay1.coefficent(0xfd);
 
   Serial.print("Diagnostics ");

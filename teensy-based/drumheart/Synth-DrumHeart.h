@@ -38,6 +38,7 @@ public:
   {
     length(1000);
     frequency(60);
+    pitchMod(0);
   }
   void noteOn();
 
@@ -50,6 +51,11 @@ public:
 
     //wav_increment = (freq * (0x80000000LL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
     wav_increment = (freq * (0x7fffffffLL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
+  }
+
+  void pitchMod(int32_t depth)
+  {
+    wav_pitch_mod = depth;
   }
 
   void length(int32_t milliseconds)
@@ -80,6 +86,7 @@ public:
   // Wavefore params
   uint32_t wav_phasor;     // 
   uint32_t wav_increment;
+  int32_t  wav_pitch_mod;
 
 private:
   audio_block_t *inputQueueArray[1];

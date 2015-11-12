@@ -51,11 +51,8 @@ void AudioSynthDrumHeart::update(void)
 {
   audio_block_t *block_wav, *block_env;
   int16_t *p_wave, *p_env, *end;
-  int32_t sin_l, sin_r, interp;
+  int32_t sin_l, sin_r, interp, mod;
   uint32_t index, scale;
-  //uint32_t remaining, mul, sample12, tmp1, tmp2;
-
-  //block = receiveWritable();
 
   block_env = allocate();
   if (!block_env) return;
@@ -81,8 +78,10 @@ void AudioSynthDrumHeart::update(void)
     }  
 
     // do wave second;
-    //*p_wave = wav_phasor >> 15;
+    mod = multiply_16tx16b(env_sqr_current<<1, wav_pitch_mod);
+    
     wav_phasor += wav_increment;
+    wav_phasor += mod;
     wav_phasor &= 0x7fffffff;
 
     // then interp'd waveshape
