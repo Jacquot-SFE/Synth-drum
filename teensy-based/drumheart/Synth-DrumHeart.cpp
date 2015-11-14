@@ -33,6 +33,8 @@ extern const int16_t AudioWaveformSine[257];
 }
 
 
+static bool trap;
+
 void AudioSynthDrumHeart::noteOn(void)
 {
   __disable_irq();
@@ -44,6 +46,8 @@ void AudioSynthDrumHeart::noteOn(void)
 
   env_lin_current = 0x7fff0000;
   
+  trap = false;
+  
   __enable_irq();
 }
 
@@ -51,8 +55,9 @@ void AudioSynthDrumHeart::update(void)
 {
   audio_block_t *block_wav, *block_env;
   int16_t *p_wave, *p_env, *end;
-  int32_t sin_l, sin_r, interp, mod;
+  int32_t sin_l, sin_r, interp, mod, mod2;
   uint32_t index, scale;
+
 
   block_env = allocate();
   if (!block_env) return;
@@ -78,10 +83,27 @@ void AudioSynthDrumHeart::update(void)
     }  
 
     // do wave second;
-    mod = multiply_16tx16b(env_sqr_current<<1, wav_pitch_mod);
-    
     wav_phasor += wav_increment;
-    wav_phasor += mod;
+
+    // modulation changes how we use the increment
+    // the increment will be scaled by the modulation amount.
+
+    // Don't put data in the sign bits unless you mean it!
+    mod = multiply_16tx16b((env_sqr_current), (wav_pitch_mod<< 5));// >> 16;
+    mod2 = multiply_32x32_rshift32(wav_increment<< 4, mod<<1);
+#if 0    
+    if(!trap)
+    {
+      Serial.print(wav_increment, HEX);
+      Serial.print(' ');
+      Serial.print(mod, HEX);
+      Serial.print(' ');
+      Serial.println(mod2, HEX);
+      trap = true;
+    }
+#endif
+    
+    wav_phasor += (mod2);
     wav_phasor &= 0x7fffffff;
 
     // then interp'd waveshape
