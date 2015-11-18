@@ -51,6 +51,46 @@ void AudioSynthDrumHeart::noteOn(void)
   __enable_irq();
 }
 
+void AudioSynthDrumHeart::pitchMod(int32_t depth)
+{
+  int32_t calc;
+
+  // Depth is 10-bit ADC value
+  // call it 1.9 fixed pt fmt
+  // Lets turn it into 2.14, in range between -0.75 and ~2.9999
+  // It becomes the scalar for the modulation component of the phasor increment.
+  if(depth < 0x200)
+  {
+    // 0 to 0x200 becomes
+    // -0x3000 (AKA 0xffffCfff) to 0 ()
+
+    // TBD - do I have a sign/scaling problem?  do I need signed 3.13?
+    calc = ((0x200 - depth) * 0x3000 )>> 9;
+    calc = -calc;
+  }
+  else
+  {
+    // 0x200 to 0x3ff becomes
+    // 0x00 to 0xbfa0
+
+    // Again - mind the sign bit better??
+    calc = ((depth - 0x200) * 0xc000)>> 9;
+  }
+
+#if   0
+  // can't do this if called by global c'tor: Serial isn't there until 
+  // setup() initializes it.  
+  Serial.print("calc: ");
+  Serial.println(calc, HEX);
+
+  // Call result 2.14 format (max of ~3.99...approx 4)
+#endif  
+
+  wav_pitch_mod = calc;
+}
+
+
+
 void AudioSynthDrumHeart::update(void)
 {
   audio_block_t *block_wav, *block_env;
@@ -89,9 +129,9 @@ void AudioSynthDrumHeart::update(void)
     // the increment will be scaled by the modulation amount.
 
     // Don't put data in the sign bits unless you mean it!
-    mod = multiply_16tx16b((env_sqr_current), (wav_pitch_mod<< 5));// >> 16;
-    mod2 = multiply_32x32_rshift32(wav_increment<< 4, mod<<1);
-#if 0    
+    mod = signed_multiply_32x16b((env_sqr_current), (wav_pitch_mod>>1)) >> 13;
+    mod2 = signed_multiply_32x16b(wav_increment<<3, mod>>1);
+#if   0
     if(!trap)
     {
       Serial.print(wav_increment, HEX);

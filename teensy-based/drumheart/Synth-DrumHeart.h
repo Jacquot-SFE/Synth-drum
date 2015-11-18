@@ -38,7 +38,7 @@ public:
   {
     length(1000);
     frequency(60);
-    pitchMod(0);
+    pitchMod(0x200);
   }
   void noteOn();
 
@@ -53,10 +53,7 @@ public:
     wav_increment = (freq * (0x7fffffffLL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
   }
 
-  void pitchMod(int32_t depth)
-  {
-    wav_pitch_mod = depth;
-  }
+  void pitchMod(int32_t depth);
 
   void length(int32_t milliseconds)
   {
