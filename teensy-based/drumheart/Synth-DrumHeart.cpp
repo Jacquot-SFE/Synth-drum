@@ -161,10 +161,10 @@ void AudioSynthDrumHeart::update(void)
     p_wave++;
  }
 
-  transmit(block_env, 0);
+  transmit(block_env, 1);
   release(block_env);
   
-  transmit(block_wav, 1);
+  transmit(block_wav, 0);
   release(block_wav);
 
 }

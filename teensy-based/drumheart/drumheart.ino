@@ -7,20 +7,67 @@
 #include "Synth-DrumHeart.h"
 
 // GUItool: begin automatically generated code
-//AudioSynthNoiseWhite     noise1;         //xy=573,86
-//AudioSynthWaveformSineModulated sine_fm1;
-AudioSynthDrumHeart decay1;
-AudioEffectMultiply mult1;
+AudioSynthNoiseWhite     noise1;         //xy=573,86
+AudioSynthDrumHeart      drum1;
+
+AudioMixer4              mixer;
+AudioEffectMultiply      mult1;
 AudioOutputI2S           i2s1;           //xy=968,448
 
-//AudioConnection          patchCord1(sine_fm1, 0, mult1, 0);
-AudioConnection          patchCord1(decay1, 0, mult1, 0);
-AudioConnection          patchCord2(decay1, 1, mult1, 1);
-AudioConnection          patchCord3(mult1, 0, i2s1, 0);
-AudioConnection          patchCord4(mult1, 0, i2s1, 1);
+AudioConnection          patchCord1(drum1, 0, mixer, 0);
+AudioConnection          patchCord11(noise1, 0, mixer, 1);
+
+AudioConnection          patchCord2(mixer, 0, mult1, 0);
+AudioConnection          patchCord22(drum1, 1, mult1, 1);
+
+AudioConnection          patchCord5(mult1, 0, i2s1, 0);
+AudioConnection          patchCord6(mult1, 0, i2s1, 1);
 
 AudioControlSGTL5000     sgtl5000_1;     //xy=906,517
 // GUItool: end automatically generated code
+
+
+void trigger()
+{
+  AudioNoInterrupts();
+  drum1.noteOn();
+  AudioInterrupts();
+}
+
+void paramUpdate()
+{
+  uint16_t len, bend, pitch;
+
+  uint16_t mixadc;
+  float    mix;
+
+  len = analogRead(A1);
+  bend = analogRead(A2);
+  pitch = analogRead(A0);
+  mixadc = analogRead(A7);
+
+#if 0
+  Serial.print("Analog: ");
+  Serial.print(len, HEX);
+  Serial.print(" ");
+  Serial.println(bend, HEX);
+  Serial.print(" ");
+  Serial.println(pitch, HEX);
+#endif
+
+  drum1.length((len * 2) + 50);
+  drum1.pitchMod(bend);
+  drum1.frequency(30 + (pitch>>1));
+
+  // 0 is osc, 1 is noise
+  mix = (float)mixadc / 1024.0;
+  
+  mixer.gain(0, (1.0 - mix));
+  mixer.gain(1, (mix));
+
+}
+
+static uint32_t next;
 
 
 void setup() {
@@ -31,19 +78,22 @@ void setup() {
   pinMode(13, OUTPUT); // LED pin
   //pinMode(15, INPUT); // Volume pot pin?
 
-  //analogReadResolution(8);
-
+  // audio library init
   AudioMemory(15);
+
+  next = millis() + 1000;
+
+  // read panel before we start to run
+  paramUpdate();
 
   AudioNoInterrupts();
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.75);
 
-  //noise1.amplitude(0.5);
-
-  //sine_fm1.frequency(220);
-  decay1.pitchMod(-1000);
-
+  noise1.amplitude(0.5);
+  //sine1.frequency(1);
+  //sine1.amplitude(1.0);
+  
 
   AudioInterrupts();
 
@@ -52,41 +102,19 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  uint16_t coeff;
-  uint16_t adc, bend;
 
-  AudioNoInterrupts();
-  digitalWrite(13, HIGH);
-//  sine_fm1.phase(0);
-  decay1.noteOn();
-  AudioInterrupts();
-#if 0
-  //Serial.println(decay1.increment);
-  for (int i = 0 ; i < 200; i++)
+  paramUpdate();
+
+  if(millis() == next)
   {
-    delay(10);
-    Serial.println(decay1.wav_pitch_mod, HEX);
+    next = millis() + 1000;
+
+    trigger();
+
+    Serial.print("Diagnostics ");
+    Serial.print(AudioProcessorUsageMax());
+    Serial.print(" ");
+    Serial.println(AudioMemoryUsageMax());
+    AudioProcessorUsageMaxReset();
   }
-#endif
-  delay(1);
-  digitalWrite(13, LOW);
-  delay(2000);
-
-  adc = analogRead(A1);
-  bend = analogRead(A2);
-
-  Serial.print("Analog: ");
-  Serial.print(adc, HEX);
-  Serial.println(bend, HEX);
-
-  decay1.length((adc * 2) + 50);
-  decay1.pitchMod(bend);
-  //decay1.coefficent(0xfd);
-
-  Serial.print("Diagnostics ");
-  Serial.print(AudioProcessorUsageMax());
-  Serial.print(" ");
-  Serial.println(AudioMemoryUsageMax());
-  AudioProcessorUsageMaxReset();
-
 }
