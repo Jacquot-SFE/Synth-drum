@@ -123,7 +123,7 @@ void loop() {
 
   if(millis() == next)
   {
-    next = millis() + 1000;
+    next = millis() + 450;
 
     trigger();
 
