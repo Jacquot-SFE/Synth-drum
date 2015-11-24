@@ -34,6 +34,16 @@
 class AudioSynthDrumHeart : public AudioStream
 {
 public:
+
+  enum eWaveshape
+  {
+    SINE = 0,
+    TRIANGLE,
+    SAW,
+    SQUARE,
+    SHAPE_NULL    
+  };
+  
   AudioSynthDrumHeart() : AudioStream(1, inputQueueArray) 
   {
     length(1000);
@@ -70,6 +80,18 @@ public:
     
     __enable_irq();    
   };
+
+  void waveshape(int32_t shape)
+  {
+    if(shape >= SHAPE_NULL)
+    {
+      wav_shape = SINE;
+    }
+    else
+    {
+      wav_shape = shape;
+    }
+  };
   
   using AudioStream::release;
   virtual void update(void);
@@ -80,10 +102,11 @@ public:
   int32_t env_sqr_current; // the square of the linear value - quasi exponential..
   int32_t env_decrement;   // how each sample deviates from previous.
 
-  // Wavefore params
+  // Waveform params
   uint32_t wav_phasor;     // 
   uint32_t wav_increment;
   int32_t  wav_pitch_mod;
+  int32_t  wav_shape;
 
 private:
   audio_block_t *inputQueueArray[1];

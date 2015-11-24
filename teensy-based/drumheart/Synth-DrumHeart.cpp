@@ -147,14 +147,50 @@ void AudioSynthDrumHeart::update(void)
     wav_phasor &= 0x7fffffff;
 
     // then interp'd waveshape
-    index = wav_phasor >> 23; // take top valid 8 bits
-    sin_l = AudioWaveformSine[index];
-    sin_r = AudioWaveformSine[index+1];
+    switch(wav_shape)
+    {
+      case SINE:
+        index = wav_phasor >> 23; // take top valid 8 bits
+        sin_l = AudioWaveformSine[index];
+        sin_r = AudioWaveformSine[index+1];
 
-    scale = (wav_phasor >> 7) & 0xFFFF;
-    sin_r *= scale;
-    sin_l *= 0xFFFF - scale;
-    interp = (sin_l + sin_r) >> 16;
+        scale = (wav_phasor >> 7) & 0xFFFF;
+        sin_r *= scale;
+        sin_l *= 0xFFFF - scale;
+        interp = (sin_l + sin_r) >> 16;
+      break;
+
+      case TRIANGLE:
+      {
+        int8_t phaz = wav_phasor >> 29;
+        if(phaz == 0)
+        {
+          interp = wav_phasor >> 14;
+        }
+        else if(phaz == 0x01)
+        {
+          interp =  0x8000l - ((wav_phasor >> 14) - 0x8000l);
+        }
+        else if(phaz == 0x02)
+        {
+          interp = - (wav_phasor >> 14);
+        }
+        else // == 0x03
+        {
+          interp = (wav_phasor >> 14);          
+        }
+      }
+      break;
+      case SAW:
+        interp = wav_phasor >> 15;
+      break;
+      case SQUARE:
+        if(wav_phasor & 0x40000000)
+          interp = 0x7fff;
+        else
+          interp = 0x8000;
+      break;
+    }
     *p_wave = interp;
 
     p_env++;
