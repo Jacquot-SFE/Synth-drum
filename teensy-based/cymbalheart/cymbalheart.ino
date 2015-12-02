@@ -10,11 +10,17 @@
 // GUItool: begin automatically generated code
 AudioSynthClatter      clat1;
 AudioSynthDecay        decay1;
+AudioFilterStateVariable filt1;
+AudioFilterStateVariable filt2;
 AudioEffectMultiply      mult1;
 
 AudioOutputI2S           i2s1;           //xy=968,448
 
-AudioConnection          patchCord1(clat1, 0, mult1, 0);
+AudioConnection          patchCord1(clat1, 0, filt1, 0);
+AudioConnection          patchCord11(decay1, 0, filt1, 1);
+AudioConnection          patchCord111(decay1, 0, filt2, 1);
+AudioConnection          patchCord12(filt1, 2, filt2, 0);//0 = lp, 1 = bp, 2 = hp
+AudioConnection          patchCord13(filt2, 1, mult1, 0);//0 = lp, 1 = bp, 2 = hp
 AudioConnection          patchCord2(decay1, 0, mult1, 1);
 AudioConnection          patchCord3(mult1, 0, i2s1, 0);
 AudioConnection          patchCord4(mult1, 0, i2s1, 1);
@@ -26,11 +32,12 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=906,517
 void trigger(uint16_t val)
 {
   AudioNoInterrupts();
-  decay1.length(val<<2);
+  decay1.length(val);
   decay1.noteOn();
   AudioInterrupts();
 
   Serial.print("Trigger: ");
+  
   Serial.println(val);
 }
 
@@ -53,7 +60,7 @@ void processTrig(uint16_t val)
       (immed > holdoff))
   {
     //drum1.frequency(30 + ((val-50)>>2));
-    trigger(val);
+    trigger(val-50);
 
     holdoff = immed + 50;
   }
@@ -67,42 +74,40 @@ void processTrig(uint16_t val)
 
 void paramUpdate()
 {
-  uint16_t len, pitchA, pitchB;
-
-  uint16_t mixadc, q, filtmod;
-  uint16_t shape, cutoff, trig;
+  uint16_t cutoff, q, filtmod;
+  uint16_t cutoff2, q2, filtmod2;
+  uint16_t trig;
   float    mix;
 
-  len = analogRead(A1);//on audion board...
+  //len = analogRead(A1);//on audio board...
+  cutoff = analogRead(A0);
+  q      = analogRead(A2);
+  filtmod = analogRead(A3);
+  cutoff2 = analogRead(A6);
+  q2      = analogRead(A7);
+  filtmod2 = analogRead(A10);
   trig = analogRead(A14);
-#if 0
-  pitchA = analogRead(A0);
-  pitchB = analogRead(A2);
-  trig   = analogRead(A14);
 
+#if 0
   Serial.print("Analog: ");
-  Serial.print(len, HEX);
+  Serial.print(cutoff, HEX);
   Serial.print(" ");
-  Serial.println(bend, HEX);
+  Serial.println(q, HEX);
   Serial.print(" ");
-  Serial.println(pitch, HEX);
+  Serial.println(filtmod, HEX);
 #endif
 
-  //drum1.length((len * 2) + 50); // 50 .. 2097 mSec
-//  drum2.length((len * 2) + 50); // 50 .. 2097 mSec
-  //drum1.pitchMod(bend);
-  //drum1.frequency(30 + (pitchA>>1));
-  //drum2.frequency(30 + (pitchB>>1));
+  
+  filt1.frequency(30 + (cutoff)); //(30 .. 541)
+  filt1.resonance(0.7 + (((float)q * 4.3)/ 1024.0));// (0.7 .. 5.0)
+  filt1.octaveControl( ((float)filtmod * 7.0) /1024.0);// (0 .. 7.0)
+
+  filt2.frequency(30 + (cutoff2)); //(30 .. 541)
+  filt2.resonance(0.7 + (((float)q2 * 4.3)/ 1024.0));// (0.7 .. 5.0)
+  filt2.octaveControl( ((float)filtmod2 * 7.0) /1024.0);// (0 .. 7.0)
 
 #if 0
-  drum1.waveshape(shape >> 8);
-  
-  filter1.frequency(30 + (cutoff>>1)); //(30 .. 541)
-  filter1.resonance(0.7 + (((float)q * 4.3)/ 1024.0));// (0.7 .. 5.0)
-
-  filter1.octaveControl( ((float)filtmod * 7.0) /1024.0);// (0 .. 7.0)
-
-  // 0 is osc, 1 is noise
+// 0 is osc, 1 is noise
   mix = (float)mixadc / 1024.0;
   mixer.gain(0, (1.0 - mix));
   mixer.gain(1, (mix));
