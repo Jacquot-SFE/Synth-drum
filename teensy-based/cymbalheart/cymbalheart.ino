@@ -5,22 +5,20 @@
 #include <SerialFlash.h>
 
 #include "Synth-Clatter.h"
-#include "Synth-DrumHeart.h"
+#include "Synth-Decay.h"
 
 // GUItool: begin automatically generated code
 AudioSynthClatter      clat1;
-AudioSynthDrumHeart    drum1;
+AudioSynthDecay        decay1;
 AudioEffectMultiply      mult1;
-AudioEffectMultiply      dummy1;
 
 AudioOutputI2S           i2s1;           //xy=968,448
 
 AudioConnection          patchCord1(clat1, 0, mult1, 0);
-AudioConnection          patchCord2(drum1, 1, mult1, 1);
-AudioConnection          patchCord22(drum1, 0, dummy1, 1);
-AudioConnection          patchCord23(drum1, 0, dummy1, 1);
+AudioConnection          patchCord2(decay1, 0, mult1, 1);
 AudioConnection          patchCord3(mult1, 0, i2s1, 0);
 AudioConnection          patchCord4(mult1, 0, i2s1, 1);
+
 
 AudioControlSGTL5000     sgtl5000_1;     //xy=906,517
 // GUItool: end automatically generated code
@@ -28,9 +26,12 @@ AudioControlSGTL5000     sgtl5000_1;     //xy=906,517
 void trigger(uint16_t val)
 {
   AudioNoInterrupts();
-  drum1.length(val<<2);
-  drum1.noteOn();
+  decay1.length(val<<2);
+  decay1.noteOn();
   AudioInterrupts();
+
+  Serial.print("Trigger: ");
+  Serial.println(val);
 }
 
 
@@ -116,6 +117,7 @@ void setup() {
   // put your setup code here, to run once:
 
   Serial.begin(115200);
+  Serial.println("Setup");
 
   pinMode(13, OUTPUT); // LED pin
   //pinMode(15, INPUT); // Volume pot pin?
@@ -131,7 +133,7 @@ void setup() {
 
   AudioNoInterrupts();
 
-  drum1.length(1000);
+  //decay1.length(1000);
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
@@ -143,13 +145,16 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
+  //Serial.println("Loop");
+
+
   paramUpdate();
 
   if(millis() == next)
   {
     next = millis() + 1000;
 
-    //drum1.noteOn();
+    //trigger(500);
 
     Serial.print("Diagnostics: max: ");
     Serial.print(AudioProcessorUsageMax());

@@ -38,11 +38,11 @@ public:
   AudioSynthClatter() : AudioStream(1, inputQueueArray) 
   {
     next_trip[0] = half_waves[0] = (AUDIO_SAMPLE_RATE_EXACT/(800*2));
-    next_trip[1] = half_waves[1] = (AUDIO_SAMPLE_RATE_EXACT/(363*2));
-    next_trip[2] = half_waves[2] = (AUDIO_SAMPLE_RATE_EXACT/(242*2));
-    next_trip[3] = half_waves[3] = (AUDIO_SAMPLE_RATE_EXACT/(205*2));
-    next_trip[4] = half_waves[4] = (AUDIO_SAMPLE_RATE_EXACT/(170*2));
-    next_trip[5] = half_waves[5] = (AUDIO_SAMPLE_RATE_EXACT/(142*2));
+    next_trip[1] = half_waves[1] = (AUDIO_SAMPLE_RATE_EXACT/(540*2));
+    next_trip[2] = half_waves[2] = (AUDIO_SAMPLE_RATE_EXACT/(522*2));
+    next_trip[3] = half_waves[3] = (AUDIO_SAMPLE_RATE_EXACT/(304*2));
+    next_trip[4] = half_waves[4] = (AUDIO_SAMPLE_RATE_EXACT/(369*2));
+    next_trip[5] = half_waves[5] = (AUDIO_SAMPLE_RATE_EXACT/(205*2));
   }
 
   using AudioStream::release;

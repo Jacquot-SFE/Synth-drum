@@ -24,57 +24,58 @@
  * THE SOFTWARE.
  */
 
-#include "Synth-Clatter.h"
+#ifndef synth_decay_h_
+#define synth_decay_h_
 
+#include "AudioStream.h"
+#include "utility/dspinst.h"
 
+//#define SAMPLES_PER_MSEC (AUDIO_SAMPLE_RATE_EXACT/1000.0)
 
-void AudioSynthClatter::update(void)
+class AudioSynthDecay : public AudioStream
 {
-  audio_block_t *out_block_p;
-  int16_t *p_wave, *end;
-  bool a, b;
+public:
 
-  out_block_p = allocate();
-  if (!out_block_p) return;
-  p_wave = (out_block_p->data);
-  end = p_wave + AUDIO_BLOCK_SAMPLES;
-
-  while(p_wave < end)
+  AudioSynthDecay() : AudioStream(0, NULL) // 0 for No inputs
   {
-    count++;
-
-    for(uint32_t i = 0; i < 6; i++)
-    {
-      if(count == next_trip[i])
-      {
-#if 1
-        //808
-        values[i] ^= 0x0800;
-#else        
-        // synbal
-        values[i] ^= 0x01;
-#endif        
-        next_trip[i] += half_waves[i];
-      }
-    }
-
-#if 1
-    // additive from TR808?
-    *p_wave = values[0] + values[1] + values[2] - values[3] - values[4] - values[5];
-#else
-    // cascaded XOR from Cynbal...
-    // easy 3-bit xor: add the three values.  LSB reflects the xor of the values.
-    a = (values[0] + values[1] + values[2]) & 0x01;
-    b = (values[3] + values[4] + values[5]) & 0x01;
-    *p_wave = ((a * 0x4000) + (b * 0x4000 )) - 0x4000;
-#endif
-
-    p_wave++;
-    
+    env_lin_current = 0;
+    env_sqr_current = 0;
+    //length(1000);
   }
+  void noteOn();
 
-  transmit(out_block_p, 0);
-  release(out_block_p);
-  
-}
+  void length(int32_t milliseconds)
+  {
+    Serial.println("decay length");
+    
+    if(milliseconds < 0)
+      return;
+    if(milliseconds > 5000) // arbitrary limit...
+      milliseconds = 5000;
+
+    int32_t len_samples = milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0);
+
+    __disable_irq();    
+
+    env_decrement = (0x7fff0000/len_samples);
+    
+    __enable_irq();    
+  };
+
+  using AudioStream::release;
+  virtual void update(void);
+
+  // public for debug...
+  // Envelope params
+  int32_t env_lin_current; // present value of linear slope.
+  int32_t env_sqr_current; // the square of the linear value - quasi exponential..
+  int32_t env_decrement;   // how each sample deviates from previous.
+
+private:
+  //audio_block_t *inputQueueArray[1];
+
+};
+
+#undef SAMPLES_PER_MSEC
+#endif
 

@@ -24,57 +24,49 @@
  * THE SOFTWARE.
  */
 
-#include "Synth-Clatter.h"
+#include "Synth-Decay.h"
 
 
-
-void AudioSynthClatter::update(void)
+void AudioSynthDecay::noteOn(void)
 {
-  audio_block_t *out_block_p;
-  int16_t *p_wave, *end;
-  bool a, b;
+  Serial.println("Decay noteOn");
+  __disable_irq();
 
-  out_block_p = allocate();
-  if (!out_block_p) return;
-  p_wave = (out_block_p->data);
-  end = p_wave + AUDIO_BLOCK_SAMPLES;
+  env_lin_current = 0x7fff0000;
+  
+  __enable_irq();
+}
 
-  while(p_wave < end)
+void AudioSynthDecay::update(void)
+{
+  //Serial.println("Decay update");
+  
+  audio_block_t *block_env;
+  int16_t *p_env, *end;
+
+  block_env = allocate();
+  if (!block_env) return;
+  p_env = (block_env->data);
+  end = p_env + AUDIO_BLOCK_SAMPLES;
+
+  while(p_env < end)
   {
-    count++;
-
-    for(uint32_t i = 0; i < 6; i++)
+    // Do envelope first
+    if(env_lin_current < 0x0000ffff)
     {
-      if(count == next_trip[i])
-      {
-#if 1
-        //808
-        values[i] ^= 0x0800;
-#else        
-        // synbal
-        values[i] ^= 0x01;
-#endif        
-        next_trip[i] += half_waves[i];
-      }
+      *p_env = 0;
     }
+    else
+    {
+      env_lin_current -= env_decrement;
+      env_sqr_current = multiply_16tx16t(env_lin_current, env_lin_current) ;
+      *p_env = env_sqr_current>>15;
+    } 
 
-#if 1
-    // additive from TR808?
-    *p_wave = values[0] + values[1] + values[2] - values[3] - values[4] - values[5];
-#else
-    // cascaded XOR from Cynbal...
-    // easy 3-bit xor: add the three values.  LSB reflects the xor of the values.
-    a = (values[0] + values[1] + values[2]) & 0x01;
-    b = (values[3] + values[4] + values[5]) & 0x01;
-    *p_wave = ((a * 0x4000) + (b * 0x4000 )) - 0x4000;
-#endif
-
-    p_wave++;
-    
+    p_env++;
   }
 
-  transmit(out_block_p, 0);
-  release(out_block_p);
-  
+  transmit(block_env);
+  release(block_env);
 }
 
