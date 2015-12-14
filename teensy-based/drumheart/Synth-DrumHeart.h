@@ -49,6 +49,7 @@ public:
     length(1000);
     frequency(60);
     pitchMod(0x200);
+    wav_second= false;
   }
   void noteOn();
 
@@ -63,22 +64,30 @@ public:
     wav_increment = (freq * (0x7fffffffLL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
   }
 
+  void second(bool setting)
+  {
+    wav_second = setting;
+  }
+
   void pitchMod(int32_t depth);
 
   void length(int32_t milliseconds)
   {
     if(milliseconds < 0)
       return;
-    if(milliseconds > 5000)
+    else if(milliseconds == 0) // avoid div by 0.
+      milliseconds = 1;
+    else if(milliseconds > 5000) // arbitrary limit...
       milliseconds = 5000;
+
 
     int32_t len_samples = milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0);
 
-    __disable_irq();    
+//    __disable_irq();    
 
     env_decrement = (0x7fff0000/len_samples);
     
-    __enable_irq();    
+//    __enable_irq();    
   };
 
   void waveshape(int32_t shape)
@@ -104,6 +113,8 @@ public:
 
   // Waveform params
   uint32_t wav_phasor;     // 
+  uint32_t wav_phasor2;     // 
+  bool     wav_second;
   uint32_t wav_increment;
   int32_t  wav_pitch_mod;
   int32_t  wav_shape;

@@ -29,12 +29,12 @@
 
 void AudioSynthDecay::noteOn(void)
 {
-  Serial.println("Decay noteOn");
-  __disable_irq();
+  //Serial.println("Decay noteOn");
+//  __disable_irq();
 
   env_lin_current = 0x7fff0000;
   
-  __enable_irq();
+//  __enable_irq();
 }
 
 void AudioSynthDecay::update(void)
