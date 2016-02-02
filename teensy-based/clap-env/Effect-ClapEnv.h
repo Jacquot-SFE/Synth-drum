@@ -61,7 +61,7 @@ public:
 
   // public for debug...
   int32_t current; // present value
-  uint8_t stt;
+  uint32_t state;
   int32_t increment; // (actually, decrement, how each sample deviates from previous.)
 
 private:

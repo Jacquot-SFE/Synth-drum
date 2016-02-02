@@ -23,7 +23,7 @@ void setup() {
 
   Serial.begin(115200);
 
-  pinMode(13, OUTPUT); // LED pin
+  //pinMode(13, OUTPUT); // LED pin
   //pinMode(15, INPUT); // Volume pot pin?
   
   //analogReadResolution(8);
@@ -32,7 +32,9 @@ void setup() {
 
   AudioNoInterrupts();
   sgtl5000_1.enable();
-  sgtl5000_1.volume(0.5);
+  sgtl5000_1.volume(0.25);
+
+  decay1.length(400);
 
   noise1.amplitude(0.5);
 
@@ -50,23 +52,25 @@ void loop() {
   uint16_t adc;
 
   AudioNoInterrupts();
-  digitalWrite(13, HIGH);
+  //digitalWrite(13, HIGH);
   //sine_fm1.phase(0);
   decay1.noteOn();
   AudioInterrupts();
-#if 0
-  Serial.println(decay1.increment);
+#if 1
+  //Serial.println(decay1.increment);
   for (int i = 0 ; i < 50; i++)
   {
     Serial.println(decay1.current, HEX);
-    Serial.println(decay1.stt, HEX);
-    delay(10);
+    Serial.println(decay1.state, HEX);
+    delay(5);
   }
 #endif
   delay(1);
-  digitalWrite(13, LOW);
+  //digitalWrite(13, LOW);
   delay(2000);
 
+#if 0
+  // no A1 on 4-channel test rig...
   adc = analogRead(A1);
 
   Serial.print("Analog: ");
@@ -74,8 +78,9 @@ void loop() {
 
   decay1.length((adc*2)+10);
   //decay1.coefficent(0xfd);
+#endif
 
-  Serial.print("Diagnostics ");
+  Serial.print("Diagnostics (prco/mem) ");
   Serial.print(AudioProcessorUsageMax());
   Serial.print(" ");
   Serial.println(AudioMemoryUsageMax());

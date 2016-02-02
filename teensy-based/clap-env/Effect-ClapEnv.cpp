@@ -32,7 +32,7 @@ void AudioEffectClapEnvelope::noteOn(void)
   __disable_irq();
 
   current = 0x7fff0000;
-  stt = 0;
+  state = 0;
   
   __enable_irq();
 }
@@ -50,6 +50,59 @@ void AudioEffectClapEnvelope::update(void)
   p = (uint32_t *)(block->data);
   end = p + AUDIO_BLOCK_SAMPLES/2;
 
+#if 0
+recheck:
+  switch(state)
+  {
+    case 4:
+    {
+      current = 0;
+      while (p < end) 
+      {
+        *p = pack_16t_16t(current, current);
+        p++;
+      }
+    }
+    break;
+
+    case 3:
+    { 
+      loc_incr = increment;
+      goto calc;
+    }
+    break;
+
+    case 0:
+    case 1:
+    case 2:
+    {
+      loc_incr = 4869428; //(10 msec)
+      //loc_incr = 486942; //(100 msec)
+
+calc:     
+      while(p < end)
+      {
+        sample12 = *p;
+        current -= loc_incr;
+        mul = multiply_16tx16t(current, current) ;
+        tmp1 = multiply_16tx16b(mul<<1, sample12);
+        current -= loc_incr;
+        mul = multiply_16tx16t(current, current) ;
+        tmp2 = multiply_16tx16t(mul<<1, sample12);
+        sample12 = pack_16t_16t(tmp2, tmp1);
+        *p = sample12;
+        p++;
+
+        if(current < 0x0000ffff)
+        {
+          state++;
+          current = 0x7fff0000;
+          goto recheck;
+        }
+      }
+    }
+  }
+#else
   if(current < 0x0000ffff)
   {
     current = 0;
@@ -61,11 +114,12 @@ void AudioEffectClapEnvelope::update(void)
   }
   else 
   {
-    if(stt < 3)
+    if(state < 3)
     {
       loc_incr = 4869428; //(10 msec)
+      //loc_incr = 486942; //(100 msec)
     }
-    else if (stt == 3)
+    else if (state == 3)
     {
       loc_incr = increment;
     }
@@ -121,19 +175,19 @@ void AudioEffectClapEnvelope::update(void)
 
       if(remaining == 0)
       {
-        stt++;
-        if(stt < 3)
+        state++;
+        if(state < 3)
         {
           //loc_incr = increment;
           current = 0x7fff0000;
           
         }
-        if(stt == 3)
+        if(state == 3)
         {
           loc_incr = increment;
           current = 0x7fff0000;
         }
-        if(stt > 3)
+        if(state > 3)
         {
           sample12 = 0;
           while(p < end)
@@ -145,6 +199,7 @@ void AudioEffectClapEnvelope::update(void)
       }
     }
   }
+#endif  
 
   transmit(block);
   release(block);
