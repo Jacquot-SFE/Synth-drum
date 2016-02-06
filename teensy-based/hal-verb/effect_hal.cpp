@@ -31,7 +31,7 @@
 
     delayline_p[delay_index] = summedin;
     delay_index++;
-    if(delay_index > delay_length)
+    if(delay_index >= delay_length)
     {
       delay_index = 0;
     }
