@@ -37,8 +37,8 @@ AudioConnection          patchCord08(hal4a, 0, hal5a, 0);
 AudioConnection          patchCord09(hal5a, 0, i2s1, 0);
 
 AudioConnection          patchCord10(hal4b, 0, hal5b, 0);
-//dioConnection          patchCord11(hal5a, 0, i2s1, 0);
-AudioConnection          patchCord12(hal5a, 0, i2s1, 1);
+//AudioConnection          patchCord12(hal5b, 0, i2s1, 1);
+AudioConnection          patchCord12(noisemult, 0, i2s1, 1);
 
 
 // some globals
@@ -49,6 +49,7 @@ static const uint32_t DEL4aLEN = 787;
 static const uint32_t DEL5aLEN = 480;
 static const uint32_t DEL4bLEN = 794;
 static const uint32_t DEL5bLEN = 477;
+
 int16_t dely1buf[DEL1LEN];
 int16_t dely2buf[DEL2LEN];
 int16_t dely3buf[DEL3LEN];
