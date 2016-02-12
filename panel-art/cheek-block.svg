@@ -13,7 +13,7 @@
    viewBox="-2.252131 -44.577 279.40003 215.89999"
    id="svg2"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="cheek-block.svg">
+   sodipodi:docname="cheek-block.pdf">
   <metadata
      id="metadata1035">
     <rdf:RDF>
@@ -36,7 +36,7 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:window-width="1920"
-     inkscape:window-height="1018"
+     inkscape:window-height="1058"
      id="namedview1033"
      showgrid="false"
      inkscape:snap-object-midpoints="true"
@@ -49,9 +49,9 @@
      units="in"
      inkscape:document-units="in"
      inkscape:zoom="0.78324024"
-     inkscape:cx="336.75776"
-     inkscape:cy="377.12754"
-     inkscape:window-x="-8"
+     inkscape:cx="802.92165"
+     inkscape:cy="397.01734"
+     inkscape:window-x="1912"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer6"
@@ -306,7 +306,7 @@ polygon.l51 {fill:#000000; }
          sodipodi:role="line"
          id="tspan7880"
          x="-14.849242"
-         y="309.62323"></tspan></text>
+         y="309.62323" /></text>
     <flowRoot
        xml:space="preserve"
        id="flowRoot7841-0-7"
@@ -388,6 +388,11 @@ polygon.l51 {fill:#000000; }
        style="fill:none;stroke:#0000b7;stroke-width:0.27940002;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Mstart);display:inline"
        d="M 202.24991,71.685891 C 205.76912,68.883251 211.02903,68.872435 214.28704,72.068357 215.74968,72.962212 217.29275,73.811714 219.00231,74.10639"
        id="path8010-2"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#0000b9;stroke-width:0.27940002;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Mstart-6)"
+       d="M 190.36861,91.319152 C 196.71594,98.273231 207.23114,99.030834 215.86445,96.797316 221.96169,92.13157 213.66197,85.961584 212.61687,80.836619 212.11235,76.575024 216.55094,75.686048 219.14201,74.246088"
+       id="path3049"
        inkscape:connector-curvature="0" />
   </g>
 </svg>
