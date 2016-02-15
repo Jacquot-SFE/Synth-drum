@@ -6,13 +6,13 @@
 //
 //
 /*
- * 
+ *
 fc = cutoff, nearly linear [0,1] -> [0, fs/2]
 res = resonance [0, 4] -> [no resonance, self-oscillation]
 
 in[x] and out[x] are member variables, init to 0.0 the controls:
 
- 
+
 Tdouble MoogVCF::run(double input, double fc, double res)
 {
 a: double f = fc * 1.16;
@@ -49,16 +49,20 @@ void AudioFilterMoog::update(void)
 
   // try frame-by-frame cutoff and Q to start...
   //a: double f = fc * 1.16;
-  f = fc;
+  f = fc;//(fc * fc) >> 15;
+#if 0
   f += (fc * 0x147a) >> 15;
+#endif
 
   //b: double fb = res * (1.0 - 0.15 * f * f);
 #if 0
   fb = 0x01;
-#else  
-  temp = (f*f)>>15;
-  temp = 0x3fff - ((temp * 4915) >> 15);
-  fb = (res * temp) >> 13;
+#else
+  temp = (f * f) >> 15;
+  temp = 0x7fff - ((temp * 4915) >> 15);
+  // Res is Q3.13
+  // Let fb be 3.13 also
+  fb = (res * temp) >> 15;
   //fb = (res * temp) >> 12;
 #endif
 
@@ -70,19 +74,21 @@ void AudioFilterMoog::update(void)
   Serial.println(fb);
 #endif
 
-  while(p < end)
+  while (p < end)
   {
     input = *p;
 #if 1
     // c: input -= out4 * fb;
-    input -= (out4 * fb)>>15;
+    // feedback is q3.13, signed
+    // IE can be multiply by up to 4-lsb.
+    input -= (out4 * fb) >> 13;
 
     // d: input *= 0.35013 * (f*f)*(f*f);
     input = (input * 0x2cd1) >> 15;
-    f4 = (f*f) >> 15;
+    f4 = (f * f) >> 15;
     f4 = (f4 * f4) >> 15;
     input = (input * f4 ) >> 15;
-    
+
     // e: out1 = input + 0.3 * in1 + (1 - f) * out1; // Pole 1
     //out1 = input + 0x2666 * in1 + (0x8000 - f) * out1;
     //       -----   ------------   -------------------
@@ -96,7 +102,7 @@ void AudioFilterMoog::update(void)
     temp = ((0x8000 - f) * out2) >> 15;
     out2 = (0x2666 * in2) >> 15;
     out2 += out1 + temp;
-    
+
     // h: in2 = out1;
     in2 = out1;
 
@@ -104,7 +110,7 @@ void AudioFilterMoog::update(void)
     temp = ((0x8000 - f) * out3) >> 15;
     out3 = (0x2666 * in3) >> 15;
     out3 += out2 + temp;
-    
+
     // j: in3 = out2;
     in3 = out2;
 
@@ -115,13 +121,13 @@ void AudioFilterMoog::update(void)
 
     // l: in4 = out3;
     in4 = out3;
-    
+
     // m: return out4;
     *p = out4;
-    
+
 #else
     *p = input;
-#endif    
+#endif
     p++;
   }
 

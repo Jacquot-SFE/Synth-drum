@@ -37,7 +37,7 @@ uint16_t param_update()
   
   filter.q(value);
   
-
+  
   value = (analogRead(A1) << 5);
   
   filter.cutoff(value);
@@ -92,7 +92,7 @@ void loop() {
 
     if(next_on)
     {
-      next += 1000;
+      next += 2000;
       Serial.println("on.");
       next_on = false;
 
@@ -100,14 +100,14 @@ void loop() {
     }
     else
     {
-      next += 1000;
+      next += 2000;
       Serial.println("off.");
       next_on = true;
 
       vca.noteOff();
     }
 
-    Serial.println(peek);
+    Serial.println(peek, HEX);
     
     Serial.print("Diagnostics: ");
     Serial.print(" max, buffs: ");
