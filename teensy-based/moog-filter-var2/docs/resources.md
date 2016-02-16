@@ -31,7 +31,7 @@ Major criteria might be:
 
 * Timo H Tossavainen appears to be one of the guys behind all of this. He posted a [nugget](http://music.columbia.edu/pipermail/music-dsp/2000-March/037204.html) MusicDSP in 2000.  Click the "next message" link for an addenda!
 
-* Grav's [Java Audiogroup](https://github.com/grav/audiogroup/blob/master/jvstwrapperplug/jVSTeXamples-0.9g-sources/jvst/examples/liquinth/MoogFilter.java) version, apparently an integer implementation?
+* Grav's [Java Audiogroup](https://github.com/grav/audiogroup/blob/master/jvstwrapperplug/jVSTeXamples-0.9g-sources/jvst/examples/liquinth/MoogFilter.java) version, apparently an integer implementation. * **Update 2/16/2016** *The constants gave it away: it's an implementation of Timo's "Variation 2", with added soft clipper on output4 (main output & feedback tap)*
 
 
 
@@ -59,6 +59,10 @@ Update (2/15/2016): it's mostly working.
 * Cutoff parameter scaling was removed...f in the calcs is the pot position.
 * Last, i was trying to add a little more resolution by making parameters into 16-bit *unsigned* ints...not entirely there yet.
  
+Update (2/16/2016): slight improvements, maybe?
+
+It looks like we lose ENOB with low cutoffs...sawtooth becomes progressively more stair-steppy.
+
 ### Attempt #2
  
 Trying the variation 1 filter, adapting what I learned in the var #2 implementation...  
@@ -66,3 +70,7 @@ Trying the variation 1 filter, adapting what I learned in the var #2 implementat
 Still no tanh(), but not written as a C function...
 
 So far, stable at low freq, but Q is underwhelming.  Doesn't mean it's not in my translation... 
+
+Update (2/15/2016): slightly better Q (need to use Q.3.13 after the multiply by 5.6 in the Q calculation).  Prgressibly unstable at combinations of hi Q and Fc.
+
+Trying Q calculation as float, converted back to int before the loop...similar effects...

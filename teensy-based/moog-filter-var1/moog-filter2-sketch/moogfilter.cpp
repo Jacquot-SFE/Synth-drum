@@ -35,6 +35,7 @@ b0 = in;
 
 */
 
+extern int16_t qpeek, rezpeek;
 
 void AudioFilterMoog2::update(void)
 {
@@ -42,14 +43,13 @@ void AudioFilterMoog2::update(void)
   int16_t *p, *end;
 
   int16_t in, temp, t1, t2;
+  float qf, femp;
 
   block = receiveWritable();
   if (!block) return;
 
   p = (block->data);
   end = p + AUDIO_BLOCK_SAMPLES;
-
-
 
   // a: q = 1.0f - frequency;
   _q = 0x7fff - frequency;
@@ -63,6 +63,15 @@ void AudioFilterMoog2::update(void)
   _f = _p + _p - 0x7fff;
 
   //d: q = resonance * (1.0f + 0.5f * q * (1.0f - q + 5.6f * q * q));
+  //       -----7---    --6--  --5-  -4-   ----3---   --2--  --1--
+#if 0
+  qf = (float)_q/0x7fff;
+  femp = (1.0f + 0.5f * qf * (1.0f - qf + 5.6f * qf * qf));
+  //Serial.println(femp);
+  temp = (int16_t)(femp  * 0x7fff);
+  temp &= 0x7fff;
+  _q = (multiply_16bx16b(resonance, temp)) >> 15;
+#else
   temp = (multiply_16bx16b(_q, _q)) >> 15;
   temp = (multiply_16bx16b(temp, 0x2cccc)) >> 15;
   temp = 0x7fff - _q - temp;
@@ -71,15 +80,18 @@ void AudioFilterMoog2::update(void)
   temp >>= 1;
   temp = 0x7fff - temp;
 
-  _q = (multiply_16bx16b(resonance, temp)) >> 14;
-
+  _q = (multiply_16bx16b(resonance, temp)) >> 15;
+  //_q = 0x4000;
+#endif
+  rezpeek = resonance;
+  qpeek = _q;
 
   while (p < end)
   {
 #if 1
     in = *p;
     //in -= q * b4; //feedback
-    temp = (multiply_16bx16b(_q, _b4)) >> 15;
+    temp = (multiply_16bx16b(_q, _b4)) >> 14;
     in = in - temp;
 
     //t1 = b1;
@@ -100,17 +112,17 @@ void AudioFilterMoog2::update(void)
     t1 = _b3;
     
     //b3 = (b2 + t2) * p - b3 * f;
-    temp = ((_b2 + t2) * _p) >> 15;
-    _b3 =  temp -((_b3 * _f) >> 15);
+    temp = (multiply_16bx16b((_b2 + t2), _p)) >> 15;
+    _b3 =  temp -((multiply_16bx16b(_b3, _f)) >> 15);
     
     //b4 = (b3 + t1) * p - b4 * f;
-    temp = ((_b3 + t1) * _p) >>15;
-    _b4 = temp - ((_b4 * _f)>>15);
+    temp = (multiply_16bx16b((_b3 + t1), _p)) >>15;
+    _b4 = temp - ((multiply_16bx16b(_b4, _f))>>15);
 
     //b4 = b4 - b4 * b4 * b4 * 0.166667f; //clipping
-    temp = (_b4 * _b4)>>15;
-    temp = (temp * _b4)>> 15;
-    temp = (temp * 0x1555)>>15;
+    temp = (multiply_16bx16b(_b4, _b4))>>15;
+    temp = (multiply_16bx16b(temp, _b4))>> 15;
+    temp = (multiply_16bx16b (temp, 0x1555))>>15;
     _b4 -= temp;
     
     //b0 = in;

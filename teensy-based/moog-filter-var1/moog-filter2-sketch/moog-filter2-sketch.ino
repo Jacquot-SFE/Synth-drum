@@ -27,11 +27,15 @@ AudioConnection     patchCord04(vca, 0, i2s1, 1);
 
 uint32_t next;
 
+int16_t qpeek, rezpeek;
+
 /***************/
 
 uint16_t param_update()
 {
   uint16_t value;
+
+  // ADC goves us 10 bits of data.
 
   value = (analogRead(A2) << 5);
   
@@ -56,10 +60,11 @@ void setup() {
   AudioNoInterrupts();
 
   gen.frequency(100);
+  //gen.frequency(80);
   //gen.amplitude(1.0);
   gen.amplitude(0.25);
-  gen.begin(WAVEFORM_SAWTOOTH);
-  //gen.begin(WAVEFORM_SQUARE);
+  //gen.begin(WAVEFORM_SAWTOOTH);
+  gen.begin(WAVEFORM_SQUARE);
 
   vca.attack(25);
   vca.decay(100);
@@ -83,31 +88,40 @@ void loop() {
   // put your main code here, to run repeatedly:
   static bool next_on = true;
 
+  static uint32_t count = 0;
+
   uint16_t peek;
 
   peek = param_update();
 
   if(millis() > next)
   {
+    next += 500;
 
-    if(next_on)
+    switch(count % 4)
     {
-      next += 2000;
-      Serial.println("on.");
-      next_on = false;
+      case 0:
+        gen.frequency(100);
+        vca.noteOn();
+      break;
 
-      vca.noteOn();
+      case 1:
+        vca.noteOff();
+      break;
+
+      case 2:
+        gen.frequency(150);
+        vca.noteOn();
+      break;
+
+      case 3:
+        vca.noteOff();
+      break;
     }
-    else
-    {
-      next += 2000;
-      Serial.println("off.");
-      next_on = true;
 
-      vca.noteOff();
-    }
+    count++;
 
-    Serial.println(peek, HEX);
+    //Serial.println(peek, HEX);
     
     Serial.print("Diagnostics: ");
     Serial.print(" max, buffs: ");
@@ -115,6 +129,10 @@ void loop() {
     Serial.print(" ");
     Serial.println(AudioMemoryUsageMax());
     AudioProcessorUsageMaxReset();
+    Serial.print("rezpeek: ");
+    Serial.print(rezpeek, HEX);
+    Serial.print(" qpeek: ");
+    Serial.println(qpeek, HEX);
   }
 
 }
