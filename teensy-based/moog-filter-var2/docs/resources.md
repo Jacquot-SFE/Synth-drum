@@ -43,4 +43,26 @@ The  hyperbolic tangent is an s-shaped curve.  It's apparently being used as a d
 
 ## Testing notes?
 
+### Attempt #1
+
 My first try will be the variation 2 filter...let's go cook some headphones.
+
+Update (2/15/2016): it's mostly working.
+
+* DSP load isn't too heavy...maybe 5% of available at 72 MHz, non-optimized.
+* Implementation is naive & easy.  Float constants were translated to signed 16 bit integers, math translated to use it.
+	* there's a spreadsheet in the directory that contains the   
+* This one was selected because the overall flow was the simplest, and it had no tanh().
+* Commenter on that old thread complained about instability at low cutoffs...I'm experiencing that.below about 0xf00 it seems to be overflowing really painfully and generating white noise. 
+	* Just above that boint, it looks like we're running out of bits somewhere?  As the cutoff drops, we see the sawtooth break into a number of discrete steps - 4, then 3, then 2, then bammo.
+	* Appears to be independent of Q.   
+* Cutoff parameter scaling was removed...f in the calcs is the pot position.
+* Last, i was trying to add a little more resolution by making parameters into 16-bit *unsigned* ints...not entirely there yet.
+ 
+### Attempt #2
+ 
+Trying the variation 1 filter, adapting what I learned in the var #2 implementation...  
+
+Still no tanh(), but not written as a C function...
+
+So far, stable at low freq, but Q is underwhelming.  Doesn't mean it's not in my translation... 

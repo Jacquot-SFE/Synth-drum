@@ -38,7 +38,7 @@ uint16_t param_update()
   filter.q(value);
   
   
-  value = (analogRead(A1) << 5);
+  value = (analogRead(A1) << 6);
   
   filter.cutoff(value);
 

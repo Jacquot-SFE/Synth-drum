@@ -38,7 +38,7 @@ void AudioFilterMoog::update(void)
   int16_t *p, *end;
   int16_t input, temp;
 
-  int16_t f, f4;
+  uint16_t f, f4;
   int16_t fb;
 
   block = receiveWritable();
@@ -51,7 +51,7 @@ void AudioFilterMoog::update(void)
   //a: double f = fc * 1.16;
   f = fc;//(fc * fc) >> 15;
 #if 0
-  f += (fc * 0x147a) >> 15;
+  f += (fc * 0x??28f5) >> 16;
 #endif
 
   //b: double fb = res * (1.0 - 0.15 * f * f);
@@ -59,7 +59,7 @@ void AudioFilterMoog::update(void)
   fb = 0x01;
 #else
   temp = (f * f) >> 15;
-  temp = 0x7fff - ((temp * 4915) >> 15);
+  temp = 0x7fff - ((temp * 0x2666) >> 16);
   // Res is Q3.13
   // Let fb be 3.13 also
   fb = (res * temp) >> 15;
@@ -84,39 +84,39 @@ void AudioFilterMoog::update(void)
     input -= (out4 * fb) >> 13;
 
     // d: input *= 0.35013 * (f*f)*(f*f);
-    input = (input * 0x2cd1) >> 15;
-    f4 = (f * f) >> 15;
-    f4 = (f4 * f4) >> 15;
-    input = (input * f4 ) >> 15;
+    input = (input * 0x59a2) >> 16;
+    f4 = (f * f) >> 16;
+    f4 = (f4 * f4) >> 16;
+    input = (input * f4 ) >> 16;
 
     // e: out1 = input + 0.3 * in1 + (1 - f) * out1; // Pole 1
     //out1 = input + 0x2666 * in1 + (0x8000 - f) * out1;
     //       -----   ------------   -------------------
-    temp = ((0x8000 - f) * out1) >> 15;
-    out1 = (0x2666 * in1) >> 15;
+    temp = ((0xffff - f) * out1) >> 16;
+    out1 = (0x4ccc * in1) >> 16;
     out1 += input + temp;
 
     // f: in1 = input;
     in1 = input;
     // g: out2 = out1 + 0.3 * in2 + (1 - f) * out2; // Pole 2
-    temp = ((0x8000 - f) * out2) >> 15;
-    out2 = (0x2666 * in2) >> 15;
+    temp = ((0xffff - f) * out2) >> 16;
+    out2 = (0x4ccc * in2) >> 16;
     out2 += out1 + temp;
 
     // h: in2 = out1;
     in2 = out1;
 
     // i: out3 = out2 + 0.3 * in3 + (1 - f) * out3; // Pole 3
-    temp = ((0x8000 - f) * out3) >> 15;
-    out3 = (0x2666 * in3) >> 15;
+    temp = ((0xffff - f) * out3) >> 16;
+    out3 = (0x4ccc * in3) >> 16;
     out3 += out2 + temp;
 
     // j: in3 = out2;
     in3 = out2;
 
     // k: out4 = out3 + 0.3 * in4 + (1 - f) * out4; // Pole 4
-    temp = ((0x8000 - f) * out4) >> 15;
-    out4 = (0x2666 * in4) >> 15;
+    temp = ((0xffff - f) * out4) >> 16;
+    out4 = (0x4ccc * in4) >> 16;
     out4 += out3 + temp;
 
     // l: in4 = out3;

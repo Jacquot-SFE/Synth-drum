@@ -32,9 +32,9 @@ public:
     //res = 0x7000;
   };
 
-  void cutoff(int16_t val)
+  void cutoff(uint16_t val)
   {
-    if((val >= 0) &&(val <= 0x7fff ))
+    if((val >= 0) &&(val <= 0xffff ))
     {
       fc = val;
     }
@@ -57,7 +57,7 @@ private:
   int16_t in1, in2, in3, in4;
   int16_t out1, out2, out3, out4;
 
-  int16_t fc;
+  uint16_t fc;
   int16_t res;
 
 };
