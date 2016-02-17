@@ -35,7 +35,9 @@ b0 = in;
 
 */
 
-extern int16_t qpeek, rezpeek;
+extern int16_t q1peek, ppeek, fpeek, q2peek, rezpeek;
+extern int32_t extra;
+extern float flpeek, fl2peek;
 
 void AudioFilterMoog2::update(void)
 {
@@ -44,6 +46,7 @@ void AudioFilterMoog2::update(void)
 
   int16_t in, temp, t1, t2;
   float qf, femp;
+  int32_t temp32;
 
   block = receiveWritable();
   if (!block) return;
@@ -53,45 +56,56 @@ void AudioFilterMoog2::update(void)
 
   // a: q = 1.0f - frequency;
   _q = 0x7fff - frequency;
+  q1peek = _q;
+
 
   // b: p = frequency + 0.8f * frequency * q;
   temp = (multiply_16bx16b(0x6666, frequency)) >> 15;
   temp = (multiply_16bx16b(temp, _q)) >> 15;
   _p = frequency + temp;
+  ppeek = _p;
 
   // c: f = p + p - 1.0f;
   _f = _p + _p - 0x7fff;
+  fpeek = _f;
 
   //d: q = resonance * (1.0f + 0.5f * q * (1.0f - q + 5.6f * q * q));
   //       -----7---    --6--  --5-  -4-   ----3---   --2--  --1--
-#if 0
+#if 1
   qf = (float)_q/0x7fff;
   femp = (1.0f + 0.5f * qf * (1.0f - qf + 5.6f * qf * qf));
-  //Serial.println(femp);
-  temp = (int16_t)(femp  * 0x7fff);
-  temp &= 0x7fff;
-  _q = (multiply_16bx16b(resonance, temp)) >> 15;
+  flpeek = femp;
+
+  femp *= ((float)resonance/0x7fff);
+  fl2peek = femp;
+  
+  temp32 = femp * 32768.0;
+  //temp &= 0x7fff;
+  //_q = (multiply_16bx16b(resonance, temp)) >> 15;
+  _q = temp32;
+  q1peek = _q;
 #else
-  temp = (multiply_16bx16b(_q, _q)) >> 15;
-  temp = (multiply_16bx16b(temp, 0x2cccc)) >> 15;
-  temp = 0x7fff - _q - temp;
+  temp32 = (multiply_16bx16b(_q, _q)) >> 15;
+  //temp32 = (multiply_16bx16b(temp32, 0x2cccc)) >> 15;
+  temp32 = (temp32 * 0x2cccc) >> 15;
+  extra = temp32;
+  temp32 = 0x7fff - _q - temp32;
 
-  temp = (multiply_16bx16b(temp, _q)) >> 15;
-  temp >>= 1;
-  temp = 0x7fff - temp;
+  temp32 = (multiply_16bx16b(temp32, _q)) >> 15;
+  temp32 >>= 1;
+  temp32 = 0x7fff - temp32;
 
-  _q = (multiply_16bx16b(resonance, temp)) >> 15;
-  //_q = 0x4000;
+  _q = (multiply_16bx16b(resonance, temp32)) >> 15;
 #endif
   rezpeek = resonance;
-  qpeek = _q;
+//  q2peek = _q;
 
   while (p < end)
   {
 #if 1
     in = *p;
     //in -= q * b4; //feedback
-    temp = (multiply_16bx16b(_q, _b4)) >> 14;
+    temp = (multiply_16bx16b(_q, _b4)) >> 15;
     in = in - temp;
 
     //t1 = b1;

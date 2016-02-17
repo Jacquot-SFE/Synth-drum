@@ -27,7 +27,9 @@ AudioConnection     patchCord04(vca, 0, i2s1, 1);
 
 uint32_t next;
 
-int16_t qpeek, rezpeek;
+int16_t q1peek, ppeek, fpeek, q2peek, rezpeek;
+int32_t extra;
+float   flpeek, fl2peek;
 
 /***************/
 
@@ -40,11 +42,13 @@ uint16_t param_update()
   value = (analogRead(A2) << 5);
   
   filter.q(value);
+  //filter.q(0x2000);
   
   
   value = (analogRead(A1) << 5);
   
   filter.cutoff(value);
+  //filter.cutoff(0x2000);
 
   return(value);
 }
@@ -66,10 +70,10 @@ void setup() {
   //gen.begin(WAVEFORM_SAWTOOTH);
   gen.begin(WAVEFORM_SQUARE);
 
-  vca.attack(25);
-  vca.decay(100);
+  vca.attack(5);
+  vca.decay(250);
   vca.sustain(0.5);
-  vca.release(200);
+  vca.release(25);
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.15);
@@ -96,12 +100,12 @@ void loop() {
 
   if(millis() > next)
   {
-    next += 500;
+    next +=125;
 
     switch(count % 4)
     {
       case 0:
-        gen.frequency(100);
+        gen.frequency(66);
         vca.noteOn();
       break;
 
@@ -110,7 +114,7 @@ void loop() {
       break;
 
       case 2:
-        gen.frequency(150);
+        gen.frequency(100);
         vca.noteOn();
       break;
 
@@ -121,7 +125,7 @@ void loop() {
 
     count++;
 
-    //Serial.println(peek, HEX);
+    Serial.println(peek, HEX);
     
     Serial.print("Diagnostics: ");
     Serial.print(" max, buffs: ");
@@ -129,10 +133,25 @@ void loop() {
     Serial.print(" ");
     Serial.println(AudioMemoryUsageMax());
     AudioProcessorUsageMaxReset();
+
     Serial.print("rezpeek: ");
     Serial.print(rezpeek, HEX);
-    Serial.print(" qpeek: ");
-    Serial.println(qpeek, HEX);
+    Serial.print(" flpeek: ");
+    Serial.print(flpeek, 6);
+    Serial.print(" fl2peek: ");
+    Serial.print(fl2peek, 6);
+    Serial.print(" q1: ");
+    Serial.print(q1peek, HEX);
+#if 0    
+    Serial.print(" p: ");
+    Serial.print(ppeek, HEX);
+    Serial.print(" f: ");
+    Serial.print(fpeek, HEX);
+    Serial.print(" extra; ");
+    Serial.print(extra, HEX);
+    Serial.print(" q2; ");
+    Serial.println(q2peek, HEX);
+#endif
   }
 
 }
