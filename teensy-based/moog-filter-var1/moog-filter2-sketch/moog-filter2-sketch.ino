@@ -28,7 +28,7 @@ AudioConnection     patchCord04(vca, 0, i2s1, 1);
 uint32_t next;
 
 int16_t q1peek, ppeek, fpeek, q2peek, rezpeek;
-int32_t extra;
+int32_t extra, chk;
 float   flpeek, fl2peek;
 
 /***************/
@@ -37,16 +37,16 @@ uint16_t param_update()
 {
   uint16_t value;
 
-  // ADC goves us 10 bits of data.
+  // ADC gives us 10 bits of data.
 
   value = (analogRead(A2) << 5);
-  
-  filter.q(value);
+  filter.q((value * 7) >>3);// constrain range to 7/8's of adc val to prevent freakout.
   //filter.q(0x2000);
+
+  value = analogRead(A12);
+  gen.amplitude((float)value/0x3ff);
   
-  
-  value = (analogRead(A1) << 5);
-  
+  value = (analogRead(A1) << 4);//was 5...1/2 the range means better resolution...
   filter.cutoff(value);
   //filter.cutoff(0x2000);
 
@@ -64,11 +64,9 @@ void setup() {
   AudioNoInterrupts();
 
   gen.frequency(100);
-  //gen.frequency(80);
-  //gen.amplitude(1.0);
-  gen.amplitude(0.25);
-  //gen.begin(WAVEFORM_SAWTOOTH);
-  gen.begin(WAVEFORM_SQUARE);
+  gen.amplitude(0.10);
+  gen.begin(WAVEFORM_SAWTOOTH);
+  //gen.begin(WAVEFORM_SQUARE);
 
   vca.attack(5);
   vca.decay(250);
@@ -76,7 +74,7 @@ void setup() {
   vca.release(25);
 
   sgtl5000_1.enable();
-  sgtl5000_1.volume(0.15);
+  sgtl5000_1.volume(0.3);
 
   AudioInterrupts();
 
@@ -100,7 +98,7 @@ void loop() {
 
   if(millis() > next)
   {
-    next +=125;
+    next += 2000;//125;
 
     switch(count % 4)
     {
@@ -142,13 +140,15 @@ void loop() {
     Serial.print(fl2peek, 6);
     Serial.print(" q1: ");
     Serial.print(q1peek, HEX);
+    Serial.print(" extra; ");
+    Serial.print(extra, HEX);
+    Serial.print(" chk; ");
+    Serial.println(chk, HEX);
 #if 0    
     Serial.print(" p: ");
     Serial.print(ppeek, HEX);
     Serial.print(" f: ");
     Serial.print(fpeek, HEX);
-    Serial.print(" extra; ");
-    Serial.print(extra, HEX);
     Serial.print(" q2; ");
     Serial.println(q2peek, HEX);
 #endif

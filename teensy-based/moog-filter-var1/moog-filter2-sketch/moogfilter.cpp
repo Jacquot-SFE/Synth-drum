@@ -36,7 +36,7 @@ b0 = in;
 */
 
 extern int16_t q1peek, ppeek, fpeek, q2peek, rezpeek;
-extern int32_t extra;
+extern int32_t extra, chk;
 extern float flpeek, fl2peek;
 
 void AudioFilterMoog2::update(void)
@@ -46,7 +46,7 @@ void AudioFilterMoog2::update(void)
 
   int16_t in, temp, t1, t2;
   float qf, femp;
-  int32_t temp32;
+  int32_t temp32, q32;
 
   block = receiveWritable();
   if (!block) return;
@@ -80,10 +80,8 @@ void AudioFilterMoog2::update(void)
   fl2peek = femp;
   
   temp32 = femp * 32768.0;
-  //temp &= 0x7fff;
-  //_q = (multiply_16bx16b(resonance, temp)) >> 15;
-  _q = temp32;
-  q1peek = _q;
+  q32 = temp32;
+  extra = q32;
 #else
   temp32 = (multiply_16bx16b(_q, _q)) >> 15;
   //temp32 = (multiply_16bx16b(temp32, 0x2cccc)) >> 15;
@@ -105,8 +103,12 @@ void AudioFilterMoog2::update(void)
 #if 1
     in = *p;
     //in -= q * b4; //feedback
-    temp = (multiply_16bx16b(_q, _b4)) >> 15;
-    in = in - temp;
+    ///q1peek = _b4;
+    // The following shifts off 16 bits, when we only wanted to lose 15...
+    temp32 = (signed_multiply_32x16b(q32, _b4))<<1; ;
+    //temp32 = (q32 * _b4) >> 15 ;
+    ///chk = temp32;
+    in = in - temp32;
 
     //t1 = b1;
     t1 = _b1;
