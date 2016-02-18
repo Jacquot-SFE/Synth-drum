@@ -40,14 +40,27 @@ uint16_t param_update()
   // ADC gives us 10 bits of data.
 
   value = (analogRead(A2) << 5);
+  //filter.q(value);
   filter.q((value * 7) >>3);// constrain range to 7/8's of adc val to prevent freakout.
+  //filter.q((value * 3) >>2);// constrain range to 3/4's of adc val to prevent freakout.
   //filter.q(0x2000);
 
+  
+  // To experiement with input levels.
+  // I think the filter runs out of resolution and misbehaves when
+  // it runs out of headroom.
+  // In particular, i was seeing that manual frequency sweeps at hi resonance were causing
+  // a funny signal-related DC offset to be introduced...restricting the input appears to 
+  // prevent that.  Apparently, attenuate by ~0.2 or more to prevent it...
   value = analogRead(A12);
   gen.amplitude((float)value/0x3ff);
+
+  // and then make up the loss with the output control.
+  value = analogRead(A13);
+  sgtl5000_1.volume((float)value/0x3ff);
   
   value = (analogRead(A1) << 4);//was 5...1/2 the range means better resolution...
-  filter.cutoff(value);
+  filter.cutoff(value);//+100);
   //filter.cutoff(0x2000);
 
   return(value);
@@ -68,7 +81,7 @@ void setup() {
   gen.begin(WAVEFORM_SAWTOOTH);
   //gen.begin(WAVEFORM_SQUARE);
 
-  vca.attack(5);
+  vca.attack(50);
   vca.decay(250);
   vca.sustain(0.5);
   vca.release(25);
@@ -104,6 +117,7 @@ void loop() {
     {
       case 0:
         gen.frequency(66);
+        gen.phase(0);
         vca.noteOn();
       break;
 
@@ -113,6 +127,7 @@ void loop() {
 
       case 2:
         gen.frequency(100);
+        gen.phase(0);
         vca.noteOn();
       break;
 
