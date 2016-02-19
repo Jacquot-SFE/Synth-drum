@@ -61,8 +61,8 @@ uint16_t param_update()
   value = analogRead(A13);
   sgtl5000_1.volume((float)value/0x3ff);
   
-  value = (analogRead(A1) << 5);//was 5...1/2 the range means better resolution...
-  filter.cutoff(value);//+100);
+  value = (analogRead(A1) << 5);//was 5...1/2 the range means better LF resolution...
+  filter.cutoff(value+1);//+100);
   //filter.cutoff(0x2000);
 
   return(value);
@@ -85,8 +85,8 @@ void setup() {
 
   vca.attack(50);
   vca.decay(250);
-  vca.sustain(0.5);
-  vca.release(25);
+  vca.sustain(1.0);
+  vca.release(50);
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.3);
