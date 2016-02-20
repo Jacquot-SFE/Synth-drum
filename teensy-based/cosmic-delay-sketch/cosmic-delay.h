@@ -10,7 +10,7 @@
 class AudioEffectCosmicDelay   : public AudioStream
 {
 public:
-	AudioEffectCosmicDelay   (void) : AudioStream(1, inputQueueArray) 
+	AudioEffectCosmicDelay   (void) : AudioStream(2, inputQueueArray) 
 	{
 	}
 	
@@ -21,46 +21,45 @@ public:
   {
     delayline_p = delay_buf;
     insert_index = 0;
-    delay_length = delay_len;
+    buffer_length = delay_len;
 
-    for(int32_t i = 0; i < delay_length; i++)
+    for(int32_t i = 0; i < buffer_length; i++)
     {
       delayline_p[i] = 0;
     }
   };
-
+#if 0
   void delaylen(int16_t val)
   {
     int32_t new_delta;
 
-    new_delta = (val * (delay_length >>1)) >> 14;
+    new_delta = (val * (buffer_length >>1)) >> 14;
     delay_delta = new_delta;
     
     //if(val < delay_length)
     //  delay_delta = val;
       
   }
-
+#endif
   void inspect(void)
   {
     Serial.print(insert_index, HEX);
     Serial.print(' ');
     Serial.print(delay_delta, HEX);
     Serial.print(' ');
-    Serial.println(delay_length, HEX);
+    Serial.println(buffer_length, HEX);
     
     };
   
 private:
-	audio_block_t *inputQueueArray[1];
+	audio_block_t *inputQueueArray[2];
 
 	int16_t *delayline_p;
  
   int32_t insert_index;
   int32_t extract_index;
-  int32_t delay_length;
+  int32_t buffer_length;
   int32_t delay_delta;
-  int32_t delay_avg;
 	
 };
 

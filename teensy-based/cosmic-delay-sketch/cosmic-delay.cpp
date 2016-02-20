@@ -1,52 +1,63 @@
  #include "cosmic-delay.h"
  //#include "utility/dspinst.h"
+
+/*
+ * Inspired by;
+ * http://musicdsp.org/showArchiveComment.php?ArchiveID=154
+ * 
+ * But some details changed for Teensy Audio.
+ * No feedback within the class, just done externally
+ * so we can add filters and stuff to the loop.
+ * 
+ * Delay time is an input to the block, and functions from 0 to 0x7fff,
+ * scaling the block length accordingly.
+ */
  
  void AudioEffectCosmicDelay::update(void)
 {
-	audio_block_t *block;
-	int16_t *data, *end;
+	audio_block_t *audioblock, *controlblock;
+	int16_t *data, *end, *ctrl;
+  uint16_t control;
 
   //int32_t delayout, scaleddelay, currentin, summedin, scaledin;
 
 
-	block = receiveWritable();
-	if (!block) return;
+	audioblock = receiveWritable(0);
+  if (!audioblock) return;
 
-  data = block->data;
-	end = block->data + AUDIO_BLOCK_SAMPLES;
+  controlblock = receiveReadOnly(1);
+  if (!controlblock) return;
+
+  data = audioblock->data;
+	end = audioblock->data + AUDIO_BLOCK_SAMPLES;
+
+  ctrl = controlblock->data;
   
 	do 
 	{
     delayline_p[insert_index] = *data;
     insert_index++;
-    if(insert_index >= delay_length)
+    if(insert_index >= buffer_length)
     {
       insert_index = 0;
     }
 
-    // Try to smooth discontinuities.
-    // Noise from pot/ADC results in crackles...
-    if(delay_avg < delay_delta)
-    {
-      delay_avg++;
-    }
-    else if(delay_avg > delay_delta)
-    {
-      delay_avg--;
-    }
-    
-    extract_index = insert_index-delay_avg;//delta;
+    delay_delta = (buffer_length * (*ctrl)) >> 15;
+      
+    extract_index = insert_index-delay_delta;
 
     if(extract_index < 0)
     {
-      extract_index = delay_length + extract_index;
+      extract_index = buffer_length + extract_index;
     }
 
     *data = delayline_p[extract_index];
     data++;  
+    ctrl++;
 	} while (data < end);
-	transmit(block);
-	release(block);
+	transmit(audioblock);
+	release(audioblock);
+  release(controlblock);
 }
 
 

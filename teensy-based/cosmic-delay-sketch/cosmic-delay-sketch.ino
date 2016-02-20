@@ -14,6 +14,7 @@ AudioEffectEnvelope  vca;
 AudioSynthNoiseWhite noise;
 
 AudioMixer4              inmix;
+AudioSynthWaveformDc     dlyctrl;
 AudioEffectCosmicDelay   xdly;
 AudioFilterBiquad        aliasfilt;
 AudioFilterBiquad        fbfilt;
@@ -32,15 +33,17 @@ AudioConnection     patchCord05(aliasfilt, 0, xdly, 0);
 AudioConnection     patchCord06(xdly, 0, fbfilt, 0);
 AudioConnection     patchCord07(fbfilt, 0, inmix, 1);
 
+AudioConnection     patchCord100(dlyctrl,0, xdly, 1);
+
 AudioConnection     patchCord08(vca, 0, outmix, 0);
 AudioConnection     patchCord09(xdly, 0, outmix, 1);
 
-AudioConnection     patchCord10(vca, 0, i2s1, 0);
+AudioConnection     patchCord10(outmix, 0, i2s1, 0);
 AudioConnection     patchCord11(outmix, 0, i2s1, 1);
 
 /***************/
 
-static const uint32_t LEN = 0x04000;
+static const uint32_t LEN = 0x06000;
 int16_t delaybuf[LEN];
 
 uint32_t next;
@@ -58,7 +61,8 @@ void param_update()
   inmix.gain(1, (float)(value*1.1/0x3ff));
 
   value = analogRead(A1);
-  xdly.delaylen(value<<5);
+  //xdly.delaylen(value<<5);
+  dlyctrl.amplitude((float)(value)/0x3ff, 2);
 
   // add output volume control.
   value = analogRead(A13);
@@ -84,28 +88,30 @@ void setup() {
   gen.begin(WAVEFORM_SAWTOOTH);
   //gen.begin(WAVEFORM_SQUARE);
 
-  //noise.amplitude(0.2);
+  //noise.amplitude(0.025);
 
   inmix.gain(0, 1.0);
   //inmix.gain(1, 0.9);
   inmix.gain(2, 0.02);
 
-  aliasfilt.setLowpass(0, 10000, 0.7);
+  // Probably not needed
+  aliasfilt.setLowpass(0, 15000, 0.7);
 
-  fbfilt.setLowpass(0, 2000, 0.7);
-  fbfilt.setHighpass(1, 150, 0.7);
+  // Telephone freq response in feedback loop
+  fbfilt.setLowpass(0, 3000, 0.7);
+  fbfilt.setHighpass(1, 300, 0.7);
 
-  outmix.gain(0, 0.0);// WAS 1.0..
+  outmix.gain(0, 1.0);
   outmix.gain(1, 1.0);
 
   vca.attack(50);
-  vca.decay(250);
+  vca.decay(50);
   vca.sustain(0.5);
   vca.release(25);
 
   //xdly.delay(0, 250);
   xdly.setbuf(LEN, delaybuf);
-  xdly.delaylen(LEN/2);
+  //xdly.delaylen(LEN/2);
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
@@ -130,8 +136,8 @@ void loop() {
 
   if(millis() > next)
   {
-    next += 125;
-
+    next += 1000;//125;
+#if 1
     switch(count % 4)
     {
       case 0:
@@ -156,7 +162,7 @@ void loop() {
         next += 1000;
       break;
     }
-
+#endif
     count++;
 
     Serial.print("Diagnostics: ");
