@@ -60,6 +60,7 @@ private:
   int32_t extract_index;
   int32_t buffer_length;
   int32_t delay_delta;
+  int32_t interp_delta;
 	
 };
 

@@ -5,6 +5,7 @@
 #include <SerialFlash.h>
 
 #include "cosmic-delay.h"
+#include "cubic-distort.h"
 
 /***************/
 
@@ -17,6 +18,7 @@ AudioMixer4              inmix;
 AudioSynthWaveformDc     dlyctrl;
 AudioEffectCosmicDelay   xdly;
 AudioFilterBiquad        aliasfilt;
+AudioEffectCubicDistort  fbdist;
 AudioFilterBiquad        fbfilt;
 AudioMixer4              outmix;
 
@@ -29,17 +31,18 @@ AudioConnection     patchCord01(gen, 0, vca, 0);
 AudioConnection     patchCord02(vca, 0, inmix, 0);
 AudioConnection     patchCord03(noise, 0, inmix, 2);
 AudioConnection     patchCord04(inmix, 0, aliasfilt, 0);
-AudioConnection     patchCord05(aliasfilt, 0, xdly, 0);
-AudioConnection     patchCord06(xdly, 0, fbfilt, 0);
-AudioConnection     patchCord07(fbfilt, 0, inmix, 1);
+AudioConnection     patchCord05(aliasfilt, 0, fbdist, 0);
+AudioConnection     patchCord06(fbdist, 0, xdly, 0);
+AudioConnection     patchCord07(xdly, 0, fbfilt, 0);
+AudioConnection     patchCord08(fbfilt, 0, inmix, 1);
 
 AudioConnection     patchCord100(dlyctrl,0, xdly, 1);
 
-AudioConnection     patchCord08(vca, 0, outmix, 0);
-AudioConnection     patchCord09(xdly, 0, outmix, 1);
+AudioConnection     patchCord09(vca, 0, outmix, 0);
+AudioConnection     patchCord10(xdly, 0, outmix, 1);
 
-AudioConnection     patchCord10(outmix, 0, i2s1, 0);
-AudioConnection     patchCord11(outmix, 0, i2s1, 1);
+AudioConnection     patchCord11(outmix, 0, i2s1, 0);
+AudioConnection     patchCord12(outmix, 0, i2s1, 1);
 
 /***************/
 
@@ -58,11 +61,13 @@ void param_update()
   // ADC gives us 10 bits of data.
   value = analogRead(A2);
 
-  inmix.gain(1, (float)(value*1.1/0x3ff));
+  inmix.gain(1, (float)(value*1.3/0x3ff));
 
   value = analogRead(A1);
+  value &= 0x3fc;
+  value |=1;
   //xdly.delaylen(value<<5);
-  dlyctrl.amplitude((float)(value)/0x3ff, 2);
+  dlyctrl.amplitude((float)value/0x3ff, 2);
 
   // add output volume control.
   value = analogRead(A13);
@@ -88,6 +93,7 @@ void setup() {
   gen.begin(WAVEFORM_SAWTOOTH);
   //gen.begin(WAVEFORM_SQUARE);
 
+  // Adding in some noise can trigger spontaneous breakaway.
   //noise.amplitude(0.025);
 
   inmix.gain(0, 1.0);
@@ -95,11 +101,14 @@ void setup() {
   inmix.gain(2, 0.02);
 
   // Probably not needed
-  aliasfilt.setLowpass(0, 15000, 0.7);
+  aliasfilt.setLowpass(0, 15000, 0.5);
 
   // Telephone freq response in feedback loop
-  fbfilt.setLowpass(0, 3000, 0.7);
-  fbfilt.setHighpass(1, 300, 0.7);
+  // Lowpass tunung and Q have a lot to do with breakaway character and behavior!
+  // If the Q gets too high, runaway gets more distorted.  0.4 or 0.5 make for
+  // more aggressive breakaway, but also get crunchy.  0.2 almost doesn't break.
+  fbfilt.setLowpass(0, 3500, 0.4);
+  fbfilt.setHighpass(1, 150, 0.6);
 
   outmix.gain(0, 1.0);
   outmix.gain(1, 1.0);
@@ -136,7 +145,7 @@ void loop() {
 
   if(millis() > next)
   {
-    next += 1000;//125;
+    next += 125;
 #if 1
     switch(count % 4)
     {
@@ -148,7 +157,7 @@ void loop() {
 
       case 1:
         vca.noteOff();
-        next += 1000;
+        next += 3000;
       break;
 
       case 2:
@@ -159,7 +168,7 @@ void loop() {
 
       case 3:
         vca.noteOff();
-        next += 1000;
+        next += 3000;
       break;
     }
 #endif
@@ -172,7 +181,6 @@ void loop() {
     Serial.println(AudioMemoryUsageMax());
     AudioProcessorUsageMaxReset();
     xdly.inspect();
-
   }
 
 }
