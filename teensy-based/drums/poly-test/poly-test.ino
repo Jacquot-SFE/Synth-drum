@@ -287,16 +287,16 @@ void paramUpdate1()
   uint16_t   snpitch, snmix, snlen;
   uint16_t   ohdec, chdec;
 
-  pitch = analogRead(A0);
-  mod = analogRead(A2);
-  len = analogRead(A3);
+  pitch = analogRead(A1);
+  mod = analogRead(A12);
+  len = analogRead(A13);
 
-  snpitch = analogRead(A6);
-  snmix = analogRead(A7);
-  snlen = analogRead(A10);
+  snpitch = analogRead(A2);
+  snmix = analogRead(A3);
+  snlen = analogRead(A14);
 
-  ohdec = analogRead(A11);
-  chdec = analogRead(A12);
+  ohdec = analogRead(A6);
+  chdec = analogRead(A16);
 
 #ifdef KICK
   kick.frequency(30 + (pitch >> 3));
@@ -315,7 +315,7 @@ void paramUpdate1()
   closedlen = chdec + 10;
 #endif  
 }
-#if 0
+#if 1
 
 void paramUpdate2()
 {
@@ -324,15 +324,15 @@ void paramUpdate2()
   uint16_t  secondskin;
   uint16_t  slen;
 
-  p1 = analogRead(A0);
-  p2 = analogRead(A2);
-  p3 = analogRead(A3);
+  p1 = analogRead(A7);
+  p2 = analogRead(A10);
+  p3 = analogRead(A11);
 
-  len = analogRead(A6);
-  mod = analogRead(A7);
-  secondskin = analogRead(A10);
+  len = analogRead(A17);
+  mod = analogRead(A18);
+  secondskin = analogRead(A19);
 
-  slen = analogRead(A11);
+  //slen = analogRead(A11);
 
   t1 = 30 + (p1 >> 1);
   t2 = 30 + (p2 >> 1);
@@ -383,7 +383,7 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   paramUpdate1();// kik,snr,hat
-  //paramUpdate2();// toms, shaker
+  paramUpdate2();// toms, shaker
 
   if (millis() >= next)
   {
