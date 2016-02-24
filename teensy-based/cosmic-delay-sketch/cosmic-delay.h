@@ -12,6 +12,7 @@ class AudioEffectCosmicDelay   : public AudioStream
 public:
 	AudioEffectCosmicDelay   (void) : AudioStream(2, inputQueueArray) 
 	{
+    buffer_length = 0;
 	}
 	
 	virtual void update(void);
@@ -28,19 +29,7 @@ public:
       delayline_p[i] = 0;
     }
   };
-#if 0
-  void delaylen(int16_t val)
-  {
-    int32_t new_delta;
 
-    new_delta = (val * (buffer_length >>1)) >> 14;
-    delay_delta = new_delta;
-    
-    //if(val < delay_length)
-    //  delay_delta = val;
-      
-  }
-#endif
   void inspect(void)
   {
     Serial.print(insert_index, HEX);
@@ -57,11 +46,8 @@ private:
 	int16_t *delayline_p;
  
   int32_t insert_index;
-  int32_t extract_index;
   int32_t buffer_length;
   int32_t delay_delta;
-  int32_t interp_delta;
-	
 };
 
 #endif

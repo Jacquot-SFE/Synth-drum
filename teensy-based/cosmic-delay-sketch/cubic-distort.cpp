@@ -42,6 +42,9 @@
     // times 1/5 - peaks at 0.8
     temp = multiply_32x32_rshift32_rounded(calc, 0x19999999);
 
+    // times 1/6 - peaks at 0.833
+    //temp = multiply_32x32_rshift32_rounded(calc, 0x15555555);
+
     *data = (calc - temp)>> 16;
     data++;  
 	} while (data < end);

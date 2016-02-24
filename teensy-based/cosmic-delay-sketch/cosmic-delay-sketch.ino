@@ -19,7 +19,6 @@ AudioSynthWaveformDc     dlyctrl;
 AudioEffectCosmicDelay   xdly;
 AudioFilterBiquad        aliasfilt;
 AudioEffectCubicDistort  fbdist;
-AudioFilterBiquad        fbfilt;
 AudioMixer4              outmix;
 
 AudioOutputI2S       i2s1;           
@@ -30,11 +29,10 @@ AudioControlSGTL5000 sgtl5000_1;
 AudioConnection     patchCord01(gen, 0, vca, 0);
 AudioConnection     patchCord02(vca, 0, inmix, 0);
 AudioConnection     patchCord03(noise, 0, inmix, 2);
-AudioConnection     patchCord04(inmix, 0, aliasfilt, 0);
-AudioConnection     patchCord05(aliasfilt, 0, fbdist, 0);
-AudioConnection     patchCord06(fbdist, 0, xdly, 0);
-AudioConnection     patchCord07(xdly, 0, fbfilt, 0);
-AudioConnection     patchCord08(fbfilt, 0, inmix, 1);
+AudioConnection     patchCord04(inmix, 0, fbdist, 0);
+AudioConnection     patchCord05(fbdist, 0, aliasfilt, 0);
+AudioConnection     patchCord06(aliasfilt, 0, xdly, 0);
+AudioConnection     patchCord07(xdly, 0, inmix, 1);
 
 AudioConnection     patchCord100(dlyctrl,0, xdly, 1);
 
@@ -46,7 +44,9 @@ AudioConnection     patchCord12(outmix, 0, i2s1, 1);
 
 /***************/
 
-static const uint32_t LEN = 0x06000;
+
+// This is about max (97%!) for internal RAM
+static const uint32_t LEN = 0x06800;
 int16_t delaybuf[LEN];
 
 uint32_t next;
@@ -66,14 +66,11 @@ void param_update()
   value = analogRead(A1);
   value &= 0x3fc;
   value |=1;
-  //xdly.delaylen(value<<5);
-  dlyctrl.amplitude((float)value/0x3ff, 2);
+  dlyctrl.amplitude((float)value/0x3ff, 10);
 
-  // add output volume control.
+  // output volume control.
   value = analogRead(A13);
   sgtl5000_1.volume((float)value/0x3ff);
-
-
 }
 
 
@@ -97,18 +94,15 @@ void setup() {
   //noise.amplitude(0.025);
 
   inmix.gain(0, 1.0);
-  //inmix.gain(1, 0.9);
+  //inmix.gain(1, 0.9);// set by knob
   inmix.gain(2, 0.02);
 
-  // Probably not needed
-  aliasfilt.setLowpass(0, 15000, 0.5);
-
-  // Telephone freq response in feedback loop
+  // Telephone freq response 
   // Lowpass tunung and Q have a lot to do with breakaway character and behavior!
   // If the Q gets too high, runaway gets more distorted.  0.4 or 0.5 make for
   // more aggressive breakaway, but also get crunchy.  0.2 almost doesn't break.
-  fbfilt.setLowpass(0, 3500, 0.4);
-  fbfilt.setHighpass(1, 150, 0.6);
+  aliasfilt.setLowpass(0, 5000, 0.4);
+  aliasfilt.setHighpass(1, 120, 0.6);
 
   outmix.gain(0, 1.0);
   outmix.gain(1, 1.0);
@@ -118,9 +112,7 @@ void setup() {
   vca.sustain(0.5);
   vca.release(25);
 
-  //xdly.delay(0, 250);
   xdly.setbuf(LEN, delaybuf);
-  //xdly.delaylen(LEN/2);
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);

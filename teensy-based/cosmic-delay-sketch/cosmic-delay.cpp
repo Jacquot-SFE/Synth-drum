@@ -13,15 +13,24 @@
  * scaling the block length accordingly.
  */
 
+ #define INTERPOLATE (1)
+
  void AudioEffectCosmicDelay::update(void)
 {
 	audio_block_t *audioblock, *controlblock;
 	int16_t *data, *end, *ctrl;
 
+  int32_t extract_index;
+
 #ifdef INTERPOLATE
+  int32_t interp_delta;
   int32_t next;
   int16_t calc;
 #endif  
+
+  if(buffer_length == 0)
+  return;
+  
 
 	audioblock = receiveWritable(0);
   if (!audioblock) return;
