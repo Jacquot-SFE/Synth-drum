@@ -24,7 +24,9 @@
  * THE SOFTWARE.
  */
 
-#include "Synth-DrumHeart.h"
+//#include <arm_math.h>
+
+#include "synth_simple_drum.h"
 
 
 // waveforms.c
@@ -35,7 +37,7 @@ extern const int16_t AudioWaveformSine[257];
 
 static bool trap;
 
-void AudioSynthDrumHeart::noteOn(void)
+void AudioSynthSimpleDrum::noteOn(void)
 {
   __disable_irq();
 
@@ -52,13 +54,13 @@ void AudioSynthDrumHeart::noteOn(void)
   __enable_irq();
 }
 
-void AudioSynthDrumHeart::pitchMod(int32_t depth)
+void AudioSynthSimpleDrum::pitchMod(int32_t depth)
 {
   int32_t calc;
 
   // Depth is 10-bit ADC value
   // call it 1.9 fixed pt fmt
-  // Lets turn it into 2.14, in range between -0.75 and ~2.9999
+  // Lets turn it into 2.14, in range between -0.75 and 2.9999
   // It becomes the scalar for the modulation component of the phasor increment.
   if(depth < 0x200)
   {
@@ -78,159 +80,122 @@ void AudioSynthDrumHeart::pitchMod(int32_t depth)
     calc = ((depth - 0x200) * 0xc000)>> 9;
   }
 
-#if   0
-  // can't do this if called by global c'tor: Serial isn't there until 
-  // setup() initializes it.  
-  Serial.print("calc: ");
-  Serial.println(calc, HEX);
-
   // Call result 2.14 format (max of ~3.99...approx 4)
-#endif  
 
   wav_pitch_mod = calc;
 }
 
 
 
-void AudioSynthDrumHeart::update(void)
+void AudioSynthSimpleDrum::update(void)
 {
-  audio_block_t *block_wav, *block_env;
-  int16_t *p_wave, *p_env, *end;
+  audio_block_t *block_wav;
+  int16_t *p_wave, *end;
   int32_t sin_l, sin_r, interp, mod, mod2;
   int32_t interp2;
   uint32_t index, scale;
+  bool do_second;
+
+  int32_t env_sqr_current; // the square of the linear value - inexpensive quasi exponential decay.
 
 
-  block_env = allocate();
-  if (!block_env) return;
-  p_env = (block_env->data);
-  end = p_env + AUDIO_BLOCK_SAMPLES;
 
   block_wav = allocate();
   if (!block_wav) return;
   p_wave = (block_wav->data);
+  end = p_wave + AUDIO_BLOCK_SAMPLES;
 
-  while(p_env < end)
+  do_second = (wav_second_amplitude > 5);
+
+  while(p_wave < end)
   {
     // Do envelope first
     if(env_lin_current < 0x0000ffff)
     {
-      *p_env = 0;
+      // If envelope has expired, then stuff zeros into output buffer.
+      *p_wave = 0;
+      p_wave++; 
     }
     else
     {
       env_lin_current -= env_decrement;
       env_sqr_current = multiply_16tx16t(env_lin_current, env_lin_current) ;
-      *p_env = env_sqr_current>>15;
-    }  
 
-    // do wave second;
-    wav_phasor  += wav_increment;
+      // do wave second;
+      wav_phasor  += wav_increment;
 
-    // modulation changes how we use the increment
-    // the increment will be scaled by the modulation amount.
-
-    // Don't put data in the sign bits unless you mean it!
-    mod = signed_multiply_32x16b((env_sqr_current), (wav_pitch_mod>>1)) >> 13;
-    mod2 = signed_multiply_32x16b(wav_increment<<3, mod>>1);
+      // modulation changes how we use the increment
+      // the increment will be scaled by the modulation amount.
+      //
+      // Pitch mod is in range [-0.75 .. 3.99999] in 2.14 format
+      // Current envelope value gets scaled by mod depth.
+      // Then phasor increment gets scaled by that.
+      //
+      // Turn on the trap macro below if this confuses you...
+      //
+      // Don't put data in the sign bits unless you mean it!
+      mod = signed_multiply_32x16b((env_sqr_current), (wav_pitch_mod>>1)) >> 13;      
+      mod2 = signed_multiply_32x16b(wav_increment<<3, mod>>1);
 #if   0
-    if(!trap)
-    {
-      Serial.print(wav_increment, HEX);
-      Serial.print(' ');
-      Serial.print(mod, HEX);
-      Serial.print(' ');
-      Serial.println(mod2, HEX);
-      trap = true;
-    }
+      if(!trap)
+      {
+        Serial.print(wav_increment, HEX);
+        Serial.print(' ');
+        Serial.print(mod, HEX);
+        Serial.print(' ');
+        Serial.println(mod2, HEX);
+        trap = true;
+      }
 #endif
     
-    wav_phasor += (mod2);
-    wav_phasor &= 0x7fffffff;
+      wav_phasor += (mod2);
+      wav_phasor &= 0x7fffffff;
 
-    if(wav_second)
-    {
-      wav_phasor2 += wav_increment;
-      wav_phasor2 += (wav_increment >> 1);
-      wav_phasor2 += mod2;
-      wav_phasor2 += (mod2 >> 1);
-      wav_phasor2 &= 0x7fffffff;
-    }
+      if(do_second)
+      {
+        wav_phasor2 += wav_increment;
+        wav_phasor2 += (wav_increment >> 1);
+        wav_phasor2 += mod2;
+        wav_phasor2 += (mod2 >> 1);
+        wav_phasor2 &= 0x7fffffff;
+      }
     
-    // then interp'd waveshape
-    switch(wav_shape)
-    {
-      case SINE:
-        index = wav_phasor >> 23; // take top valid 8 bits
+      // Phase to Sine lookup * interp:
+
+      index = wav_phasor >> 23; // take top valid 8 bits
+      sin_l = AudioWaveformSine[index];
+      sin_r = AudioWaveformSine[index+1];
+
+      scale = (wav_phasor >> 7) & 0xFFFF;
+      sin_r *= scale;
+      sin_l *= 0xFFFF - scale;
+      interp = (sin_l + sin_r) >> 16;
+      
+#if 1
+      if(do_second)
+      {
+        index = wav_phasor2 >> 23; // take top valid 8 bits
         sin_l = AudioWaveformSine[index];
         sin_r = AudioWaveformSine[index+1];
 
-        scale = (wav_phasor >> 7) & 0xFFFF;
+        scale = (wav_phasor2 >> 7) & 0xFFFF;
         sin_r *= scale;
         sin_l *= 0xFFFF - scale;
-        interp = (sin_l + sin_r) >> 16;
-
-        if(wav_second)
-        {
-          index = wav_phasor2 >> 23; // take top valid 8 bits
-          sin_l = AudioWaveformSine[index];
-          sin_r = AudioWaveformSine[index+1];
-
-          scale = (wav_phasor2 >> 7) & 0xFFFF;
-          sin_r *= scale;
-          sin_l *= 0xFFFF - scale;
-          interp2 = (sin_l + sin_r) >> 16;
-        }
-      break;
-
-      case TRIANGLE:
-      {
-        int8_t phaz = wav_phasor >> 29;
-        if(phaz == 0)
-        {
-          interp = wav_phasor >> 14;
-        }
-        else if(phaz == 0x01)
-        {
-          interp =  0x8000l - ((wav_phasor >> 14) - 0x8000l);
-        }
-        else if(phaz == 0x02)
-        {
-          interp = - (wav_phasor >> 14);
-        }
-        else // == 0x03
-        {
-          interp = (wav_phasor >> 14);          
-        }
+        interp2 = (sin_l + sin_r) >> 16;
       }
-      break;
-      case SAW:
-        interp = wav_phasor >> 15;
-      break;
-      case SQUARE:
-        if(wav_phasor & 0x40000000)
-          interp = 0x7fff;
-        else
-          interp = 0x8000;
-      break;
-    }
+#endif        
 
-    if(wav_second)
-    {
-      *p_wave = (interp + interp2) >> 1;
-    }
-    else
-    {
-      *p_wave = interp ;
-    }
+      if(do_second)
+      {
+        interp2 = (interp2 * (wav_second_amplitude << 5)) >> 15;
+        interp = (interp + interp2) >> 1;
+      }
 
-    p_env++;
-    p_wave++;
- }
+      *p_wave = signed_multiply_32x16b(env_sqr_current, interp ) >> 15 ;
+      p_wave++; 
+    }
+  }
 
-  transmit(block_env, 1);
-  release(block_env);
-  
   transmit(block_wav, 0);
   release(block_wav);
 

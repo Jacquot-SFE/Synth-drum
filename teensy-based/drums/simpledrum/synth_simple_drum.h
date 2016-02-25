@@ -24,32 +24,26 @@
  * THE SOFTWARE.
  */
 
-#ifndef effect_exponential_decay_h_
-#define effect_exponential_decay_h_
+#pragma once
+
+#ifndef _SYNTH_SIMPLE_DRUM_H_
+#define _SYNTH_SIMPLE_DRUM_H_
 #include "AudioStream.h"
 #include "utility/dspinst.h"
 
 //#define SAMPLES_PER_MSEC (AUDIO_SAMPLE_RATE_EXACT/1000.0)
 
-class AudioSynthDrumHeart : public AudioStream
+class AudioSynthSimpleDrum : public AudioStream
 {
 public:
 
-  enum eWaveshape
+  AudioSynthSimpleDrum() : AudioStream(1, inputQueueArray) 
   {
-    SINE = 0,
-    TRIANGLE,
-    SAW,
-    SQUARE,
-    SHAPE_NULL    
-  };
-  
-  AudioSynthDrumHeart() : AudioStream(1, inputQueueArray) 
-  {
-    length(1000);
+    length(600);
     frequency(60);
     pitchMod(0x200);
-    wav_second= false;
+    //wav_second= false;
+    wav_second_amplitude = 0;
   }
   void noteOn();
 
@@ -64,11 +58,12 @@ public:
     wav_increment = (freq * (0x7fffffffLL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
   }
 
-  void second(bool setting)
+#if 1
+  void second(int16_t setting)
   {
-    wav_second = setting;
+    wav_second_amplitude = setting;
   }
-
+#endif
   void pitchMod(int32_t depth);
 
   void length(int32_t milliseconds)
@@ -87,34 +82,21 @@ public:
     __enable_irq();    
   };
 
-  void waveshape(int32_t shape)
-  {
-    if(shape >= SHAPE_NULL)
-    {
-      wav_shape = SINE;
-    }
-    else
-    {
-      wav_shape = shape;
-    }
-  };
-  
   using AudioStream::release;
   virtual void update(void);
 
   // public for debug...
   // Envelope params
   int32_t env_lin_current; // present value of linear slope.
-  int32_t env_sqr_current; // the square of the linear value - quasi exponential..
   int32_t env_decrement;   // how each sample deviates from previous.
 
   // Waveform params
   uint32_t wav_phasor;     // 
   uint32_t wav_phasor2;     // 
-  bool     wav_second;
+  
+  int16_t wav_second_amplitude;
   uint32_t wav_increment;
   int32_t  wav_pitch_mod;
-  int32_t  wav_shape;
 
 private:
   audio_block_t *inputQueueArray[1];
