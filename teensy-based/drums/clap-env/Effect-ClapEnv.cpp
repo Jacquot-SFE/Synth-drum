@@ -31,7 +31,7 @@ void AudioEffectClapEnvelope::noteOn(void)
 {
   __disable_irq();
 
-  current = 0x7fff0000;
+  current_splat = 0x7fff0000;
   state = 0;
   
   __enable_irq();
@@ -50,157 +50,78 @@ void AudioEffectClapEnvelope::update(void)
   p = (uint32_t *)(block->data);
   end = p + AUDIO_BLOCK_SAMPLES/2;
 
-#if 0
 recheck:
   switch(state)
   {
-    case 4:
+    case 7:
     {
-      current = 0;
+      current_splat = 0;
       while (p < end) 
       {
-        *p = pack_16t_16t(current, current);
+        *p = pack_16t_16t(current_splat, current_splat);
         p++;
       }
     }
     break;
 
-    case 3:
+    case 6:
     { 
-      loc_incr = increment;
+      loc_incr = even_increment/3;
       goto calc;
     }
     break;
-
-    case 0:
     case 1:
-    case 2:
+    case 3:
+    case 5:
     {
-      loc_incr = 4869428; //(10 msec)
-      //loc_incr = 486942; //(100 msec)
+      loc_incr = odd_increment;
 
+      while(p < end)
+      {
+        current_splat -= loc_incr;
+        current_splat -= loc_incr;
+
+        *p = 0;
+        p++;
+
+        if(current_splat < 0x0000ffff)
+        {
+          state++;
+          current_splat = 0x7fff0000;
+          goto recheck;
+        }
+      }
+    }
+    break;
+    case 0:
+    case 2:
+    case 4:
+    {
+      loc_incr = even_increment;
 calc:     
       while(p < end)
       {
         sample12 = *p;
-        current -= loc_incr;
-        mul = multiply_16tx16t(current, current) ;
+        current_splat -= loc_incr;
+        mul = multiply_16tx16t(current_splat, current_splat) ;
         tmp1 = multiply_16tx16b(mul<<1, sample12);
-        current -= loc_incr;
-        mul = multiply_16tx16t(current, current) ;
+        
+        current_splat -= loc_incr;
+        mul = multiply_16tx16t(current_splat, current_splat) ;
         tmp2 = multiply_16tx16t(mul<<1, sample12);
         sample12 = pack_16t_16t(tmp2, tmp1);
         *p = sample12;
         p++;
 
-        if(current < 0x0000ffff)
+        if(current_splat < 0x0000ffff)
         {
           state++;
-          current = 0x7fff0000;
+          current_splat = 0x7fff0000;
           goto recheck;
         }
       }
     }
   }
-#else
-  if(current < 0x0000ffff)
-  {
-    current = 0;
-    while (p < end) 
-    {
-      *p = pack_16t_16t(current, current);
-      p++;
-    }
-  }
-  else 
-  {
-    if(state < 3)
-    {
-      loc_incr = 4869428; //(10 msec)
-      //loc_incr = 486942; //(100 msec)
-    }
-    else if (state == 3)
-    {
-      loc_incr = increment;
-    }
-
-    remaining = current / loc_incr;
-
-    if(remaining > 128)
-    {
-      while(p < end)
-      {
-        sample12 = *p;
-        current -= loc_incr;
-        mul = multiply_16tx16t(current, current) ;
-        tmp1 = multiply_16tx16b(mul<<1, sample12);
-        current -= loc_incr;
-        mul = multiply_16tx16t(current, current) ;
-        tmp2 = multiply_16tx16t(mul<<1, sample12);
-        sample12 = pack_16t_16t(tmp2, tmp1);
-        *p = sample12;
-        p++;
-      }
-    }
-    else // less than 128 remaining
-    {
-      while(remaining >= 2)
-      {
-        remaining -= 2;
-        current -= loc_incr;
-        mul = multiply_16tx16t(current, current) ;
-        tmp1 = multiply_16tx16b(mul<<1, sample12);
-        current -= loc_incr;
-        mul = multiply_16tx16t(current, current) ;
-        tmp2 = multiply_16tx16t(mul<<1, sample12);
-        sample12 = pack_16t_16t(tmp2, tmp1);
-        *p = sample12;
-        p++;
-          
-      }
-       
-      if (remaining == 1)
-      {
-        remaining--;
-        sample12 = *p;
-        current -= loc_incr;
-        mul = multiply_16tx16t(current, current);
-        tmp1 = multiply_16tx16b(mul<<1, sample12);
-        current = 0;
-        tmp2 = 0;
-        sample12 = pack_16t_16t(tmp2, tmp1);
-        *p = sample12;
-        p++;
-      }
-
-      if(remaining == 0)
-      {
-        state++;
-        if(state < 3)
-        {
-          //loc_incr = increment;
-          current = 0x7fff0000;
-          
-        }
-        if(state == 3)
-        {
-          loc_incr = increment;
-          current = 0x7fff0000;
-        }
-        if(state > 3)
-        {
-          sample12 = 0;
-          while(p < end)
-          {
-            *p = sample12;
-            p++;
-          }
-        }
-      }
-    }
-  }
-#endif  
-
   transmit(block);
   release(block);
 

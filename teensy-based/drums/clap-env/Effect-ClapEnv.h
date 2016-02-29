@@ -35,11 +35,12 @@ class AudioEffectClapEnvelope : public AudioStream
 {
 public:
   AudioEffectClapEnvelope() : AudioStream(1, inputQueueArray) {
-    length(1000);
+    splatLength(11);
+    gapLength(2);
   }
   void noteOn();
 
-  void length(int32_t milliseconds)
+  void splatLength(int32_t milliseconds)
   {
     if(milliseconds < 0)
       return;
@@ -48,21 +49,41 @@ public:
 
     int32_t len_samples = milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0);
 
+    even_increment = (0x7fff0000/len_samples);
+  };
+  void gapLength(int32_t milliseconds)
+  {
+    if(milliseconds < 0)
+      return;
+    if(milliseconds > 5000)
+      milliseconds = 5000;
 
-    __disable_irq();    
+    int32_t len_samples = milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0);
 
-    increment = (0x7fff0000/len_samples);
-    
-    __enable_irq();    
+    odd_increment = (0x7fff0000/len_samples);
+  };
+  void verbLength(int32_t milliseconds)
+  {
+    if(milliseconds < 0)
+      return;
+    if(milliseconds > 5000)
+      milliseconds = 5000;
+
+    int32_t len_samples = milliseconds*(AUDIO_SAMPLE_RATE_EXACT/1000.0);
+
+    verb_increment = (0x7fff0000/len_samples);
   };
   
   using AudioStream::release;
   virtual void update(void);
 
   // public for debug...
-  int32_t current; // present value
+  int32_t current_splat; // present value
+  int32_t current_verb; // present value
   uint32_t state;
-  int32_t increment; // (actually, decrement, how each sample deviates from previous.)
+  int32_t odd_increment; // (actually, decrement, how each sample deviates from previous.)
+  int32_t even_increment; // (actually, decrement, how each sample deviates from previous.)
+  int32_t verb_increment;
 
 private:
   audio_block_t *inputQueueArray[1];

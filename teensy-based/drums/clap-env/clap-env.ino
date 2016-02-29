@@ -5,41 +5,66 @@
 #include <SerialFlash.h>
 
 #include "Effect-ClapEnv.h"
+#include "Synth-Decay.h"
 
 // GUItool: begin automatically generated code
 AudioSynthNoiseWhite     noise1;         //xy=573,86
-//AudioSynthWaveformSineModulated sine_fm1;
 AudioEffectClapEnvelope decay1;
+AudioFilterBiquad       noisefilt;
+AudioSynthDecay          decay2;
+AudioEffectMultiply       mult;
+AudioMixer4              mix;
+
+
 AudioOutputI2S           i2s1;           //xy=968,448
 AudioConnection          patchCord1(noise1, 0, decay1, 0);
-AudioConnection          patchCord2(decay1, 0, i2s1, 0);
-AudioConnection          patchCord3(decay1, 0, i2s1, 1);
+
+AudioConnection          patchCord2(noise1, 0, noisefilt, 0);
+AudioConnection          patchCord002(noisefilt, 0, mult, 0);
+AudioConnection          patchCord3(decay2, 0, mult, 1);
+
+AudioConnection          patchCord4(decay1, 0, mix, 0);
+AudioConnection          patchCord5(mult,   0, mix, 1);
+
+AudioConnection          patchCord6(mix, 0, i2s1, 0);
+AudioConnection          patchCord7(mix, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=906,517
 // GUItool: end automatically generated code
 
+
+static uint32_t next;
+
+void updateParams()
+{
+  uint16_t value;
+  
+  value = analogRead(A3);
+  decay2.length(value);
+
+
+}
 
 void setup() {
   // put your setup code here, to run once:
 
   Serial.begin(115200);
 
-  //pinMode(13, OUTPUT); // LED pin
-  //pinMode(15, INPUT); // Volume pot pin?
-  
-  //analogReadResolution(8);
-
   AudioMemory(15);
+
+  next = millis() + 2000;
 
   AudioNoInterrupts();
   sgtl5000_1.enable();
-  sgtl5000_1.volume(0.25);
+  sgtl5000_1.volume(0.5);
 
-  decay1.length(400);
+  decay1.verbLength(30);
+
+  mix.gain(0, 0.5);
+  mix.gain(1, 0.2);
+
+  noisefilt.setLowpass(0, 5000, 0.4);
 
   noise1.amplitude(0.5);
-
-  //sine_fm1.frequency(220);
-
 
   AudioInterrupts();
 
@@ -48,15 +73,30 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  uint16_t coeff;
-  uint16_t adc;
+  updateParams();
 
-  AudioNoInterrupts();
-  //digitalWrite(13, HIGH);
-  //sine_fm1.phase(0);
-  decay1.noteOn();
-  AudioInterrupts();
-#if 1
+  if( millis() >= next)
+  {
+    next += 2000;
+    
+    decay1.noteOn();
+    decay2.noteOn();
+
+    Serial.print("Diagnostics (prco/mem) ");
+    Serial.print(AudioProcessorUsageMax());
+    Serial.print(" ");
+    Serial.println(AudioMemoryUsageMax());
+    AudioProcessorUsageMaxReset();
+#if 0
+    Serial.print(decay1.even_increment);
+    Serial.print(" ");
+    Serial.print(decay1.odd_increment);
+    Serial.print(" ");
+    Serial.println(decay1.verb_increment);
+#endif
+  }
+  
+#if 0
   //Serial.println(decay1.increment);
   for (int i = 0 ; i < 50; i++)
   {
@@ -65,25 +105,7 @@ void loop() {
     delay(5);
   }
 #endif
-  delay(1);
-  //digitalWrite(13, LOW);
-  delay(2000);
 
-#if 0
-  // no A1 on 4-channel test rig...
-  adc = analogRead(A1);
 
-  Serial.print("Analog: ");
-  Serial.println(adc, HEX);
-
-  decay1.length((adc*2)+10);
-  //decay1.coefficent(0xfd);
-#endif
-
-  Serial.print("Diagnostics (prco/mem) ");
-  Serial.print(AudioProcessorUsageMax());
-  Serial.print(" ");
-  Serial.println(AudioMemoryUsageMax());
-  AudioProcessorUsageMaxReset();
 
 }
