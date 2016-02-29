@@ -34,7 +34,7 @@ Clap VCA is apparently biased such that it's on at the peaks of the shark fins, 
 
 ![short reverb](rev-up-short.png)
 
-Timebase has been sommed outn one click - notice difference in peaks on yellow trace.
+Timebase has been zoomed out one click - notice time difference in peaks on yellow trace.
 
 * Yellow is again the clap envelope.
 * Blue is output.
