@@ -7,6 +7,8 @@
 #include "Synth-Clatter.h"
 #include "Synth-Decay.h"
 #include "Synth-DrumHeart.h"
+#include "synth_simple_drum.h"
+
 
 #define HAT
 #define KICK
@@ -22,14 +24,12 @@ AudioSynthNoiseWhite   noise;
 AudioSynthClatter      clat1;
 AudioSynthDecay        hatdecay;
 AudioFilterBiquad      hatfilter;
-//AudioSynthDrumHeart    hatdecay;
 AudioEffectMultiply    hatmult;
 #endif
 
 #ifdef KICK
 // kick
-AudioSynthDrumHeart    kick;
-AudioEffectMultiply    kickmult;
+AudioSynthSimpleDrum     kick;
 #endif
 
 #ifdef SNARE
@@ -41,8 +41,7 @@ AudioEffectMultiply    snaremult;
 
 #ifdef TOM
 // tom
-AudioSynthDrumHeart    tom;
-AudioEffectMultiply    tommult;
+AudioSynthSimpleDrum   tom;
 #endif
 
 #ifdef SHAKER
@@ -68,9 +67,7 @@ AudioConnection          patchCord90(hatmult, 0, mixer1, 0);
 #endif
 
 #ifdef KICK
-AudioConnection          patchCord10(kick, 0, kickmult, 0);
-AudioConnection          patchCord11(kick, 1, kickmult, 1);
-AudioConnection          patchCord91(kickmult, 0, mixer1, 1);
+AudioConnection          patchCord10(kick, 0, mixer1, 1);
 #endif
 
 #ifdef SNARE
@@ -82,9 +79,7 @@ AudioConnection          patchCord92(snaremult, 0, mixer1, 2);
 #endif
 
 #ifdef TOM
-AudioConnection          patchCord30(tom, 0, tommult, 0);
-AudioConnection          patchCord31(tom, 1, tommult, 1);
-AudioConnection          patchCord94(tommult, 0, mixer2, 0);
+AudioConnection          patchCord30(tom, 0, mixer2, 0);
 #endif
 
 #ifdef SHAKER
@@ -340,9 +335,9 @@ void paramUpdate2()
 
   tom.length(len + 10);
   tom.pitchMod(mod);
-  tom.second(secondskin & 0x200);
+  tom.second(secondskin);
 
-  shakedecay.length(slen + 10);
+  //shakedecay.length(slen + 10);
 }
 #endif
 
