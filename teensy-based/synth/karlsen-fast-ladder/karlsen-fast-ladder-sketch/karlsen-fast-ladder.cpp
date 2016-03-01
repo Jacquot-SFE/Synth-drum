@@ -29,7 +29,7 @@
 // Ove Hy Karlsen.
 */
 
-extern int32_t paramf, paramq;
+extern int32_t paramf, paramq, calcpeek;
 
 void AudioFilterKarlsen::update(void)
 {
@@ -69,7 +69,7 @@ void AudioFilterKarlsen::update(void)
   
   while (p < end)
   {
-#if 0
+#if 1
     // Trying to implement frequency control via audio pipeline.
     control = *ctl++;
     control *= setting_octavemult;
@@ -86,8 +86,10 @@ void AudioFilterKarlsen::update(void)
     //ult = multiply_32x32_rshift32_rounded(fcenter, n);
     fmult = multiply_32x32_rshift32_rounded(frequency, n);
     if (fmult > 5378279) fmult = 5378279;
-    fmult = fmult << 8;
+    //fmult = fmult << 8;
+    fmult = fmult << 22;//8+15
     b_fenv = fmult;
+    calcpeek = fmult;
 #else
     b_fenv = *ctl++;
     b_fenv <<= 15;   

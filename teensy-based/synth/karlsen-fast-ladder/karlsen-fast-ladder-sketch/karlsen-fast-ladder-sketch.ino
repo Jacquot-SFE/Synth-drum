@@ -6,7 +6,6 @@
 
 #include "karlsen-fast-ladder.h"
 
-int32_t paramf, paramq;
 
 /***************/
 
@@ -30,6 +29,8 @@ AudioConnection     patchCord05(vca, 0, i2s1, 1);
 /***************/
 
 uint32_t next;
+int32_t paramf, paramq;
+int32_t calcpeek;
 
 int16_t q1peek, ppeek, fpeek, q2peek, rezpeek;
 int32_t extra, chk;
@@ -87,17 +88,18 @@ void setup() {
   gen.begin(WAVEFORM_SAWTOOTH);
   //gen.begin(WAVEFORM_SQUARE);
 
-  lfo.frequency(1);
-  lfo.amplitude(1.00);
+  lfo.frequency(10);
+  lfo.amplitude(0.5); // amplitude of 1 means 2 octaves peak-peak
   //lfo.begin(WAVEFORM_SINE);
-  lfo.begin(WAVEFORM_SAWTOOTH);
+  lfo.begin(WAVEFORM_SQUARE);
+  //lfo.begin(WAVEFORM_SAWTOOTH);
 
   filter.octaveControl(1.0);
 
   vca.attack(50);
   vca.decay(250);
   vca.sustain(1.0);
-  vca.release(50);
+  vca.release(300);
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.3);
@@ -124,7 +126,7 @@ void loop() {
 
   if (millis() > next)
   {
-    next += 2500;//125;
+    next += 1000;//125;
 
     switch (count % 4)
     {
@@ -132,6 +134,8 @@ void loop() {
         gen.frequency(66);
         gen.phase(0);
         vca.noteOn();
+
+        next += 10000;
         break;
 
       case 1:
@@ -142,6 +146,8 @@ void loop() {
         gen.frequency(100);
         gen.phase(0);
         vca.noteOn();
+
+        next += 10000;
         break;
 
       case 3:
@@ -163,7 +169,9 @@ void loop() {
     Serial.print("f: ");
     Serial.print(paramf, HEX);
     Serial.print(" q: ");
-    Serial.println(paramq, HEX);
+    Serial.print(paramq, HEX);
+    Serial.print(" calc: ");
+    Serial.println(calcpeek, HEX);
     
   }
 
