@@ -11,6 +11,7 @@ int32_t paramf, paramq;
 /***************/
 
 AudioSynthWaveform   gen;
+AudioSynthWaveform   lfo;
 AudioFilterKarlsen   filter;
 AudioEffectEnvelope  vca;
 
@@ -21,9 +22,10 @@ AudioControlSGTL5000 sgtl5000_1;
 /***************/
 
 AudioConnection     patchCord01(gen, 0, filter, 0);
-AudioConnection     patchCord02(filter, 0, vca, 0);
-AudioConnection     patchCord03(vca, 0, i2s1, 0);
-AudioConnection     patchCord04(vca, 0, i2s1, 1);
+AudioConnection     patchCord02(lfo, 0, filter, 1);
+AudioConnection     patchCord03(filter, 0, vca, 0);
+AudioConnection     patchCord04(vca, 0, i2s1, 0);
+AudioConnection     patchCord05(vca, 0, i2s1, 1);
 
 /***************/
 
@@ -57,6 +59,8 @@ uint16_t param_update()
   value = analogRead(A12);
   gen.amplitude((float)value / 0x3ff);
 
+  
+
   // and then make up the loss with the output control.
   value = analogRead(A13);
   sgtl5000_1.volume((float)value / 0x3ff);
@@ -82,6 +86,13 @@ void setup() {
   gen.amplitude(0.10);
   gen.begin(WAVEFORM_SAWTOOTH);
   //gen.begin(WAVEFORM_SQUARE);
+
+  lfo.frequency(1);
+  lfo.amplitude(1.00);
+  //lfo.begin(WAVEFORM_SINE);
+  lfo.begin(WAVEFORM_SAWTOOTH);
+
+  filter.octaveControl(1.0);
 
   vca.attack(50);
   vca.decay(250);
@@ -113,7 +124,7 @@ void loop() {
 
   if (millis() > next)
   {
-    next += 2000;//125;
+    next += 2500;//125;
 
     switch (count % 4)
     {

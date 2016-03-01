@@ -33,8 +33,9 @@ extern int32_t paramf, paramq;
 
 void AudioFilterKarlsen::update(void)
 {
-  audio_block_t *block;
-  int16_t *p, *end;
+  audio_block_t *audio_block;
+  audio_block_t *control_block;
+  int16_t *p, *ctl, *end;
 
   int16_t sample;
 
@@ -44,14 +45,23 @@ void AudioFilterKarlsen::update(void)
   int32_t b_fenv; // cutoff?
   int32_t temp;
 
-  block = receiveWritable();
-  if (!block) return;
+  // And values from the state variable control input...
+  int32_t control;
+  int32_t fmult, n;
 
-  p = (block->data);
+  audio_block = receiveWritable(0);
+  if (!audio_block) return;
+
+  control_block = receiveReadOnly(1);
+  if (!control_block) return;
+
+  p = (audio_block->data);
   end = p + AUDIO_BLOCK_SAMPLES;
 
+  ctl = (control_block->data);
+
   b_fres = resonance << 16;//0; 
-  b_fenv = frequency<<16;//0x08000000 ;
+  b_fenv = frequency<<15;//0x08000000 ;
 
   paramf = b_fenv;
   paramq = b_fres;
@@ -59,8 +69,34 @@ void AudioFilterKarlsen::update(void)
   
   while (p < end)
   {
-    sample = *p;
+#if 0
+    // Trying to implement frequency control via audio pipeline.
+    control = *ctl++;
+    control *= setting_octavemult;
+    n = control &0x7ffffff; // 27 fractional bits.
 
+    // exp2 algorithm by Laurent de Soras
+    // http://www.musicdsp.org/showone.php?id=106
+    n = (n + 134217728) << 3;
+    n = multiply_32x32_rshift32_rounded(n, n);
+    n = multiply_32x32_rshift32_rounded(n, 715827883) << 3;
+    n = n + 715827882;
+    //#endif
+    n = n >> (6 - (control >> 27)); // 4 integer control bits
+    //ult = multiply_32x32_rshift32_rounded(fcenter, n);
+    fmult = multiply_32x32_rshift32_rounded(frequency, n);
+    if (fmult > 5378279) fmult = 5378279;
+    fmult = fmult << 8;
+    b_fenv = fmult;
+#else
+    b_fenv = *ctl++;
+    b_fenv <<= 15;   
+    b_fenv += 0x40000000; 
+#endif
+
+    
+    
+    sample = *p;
     // Trying to come to term with the variable names in the original.
     // I think some of the names get recycled as temps for calculations
     //-------------------------
@@ -88,15 +124,17 @@ void AudioFilterKarlsen::update(void)
     // fixed pt impl is using q3.29 to clip at 0x2000.0000 and 0xe000.0000
     if(b_v >= 0x1000000)
     {
+      //Serial.print(".");
       b_v = 0x0ffffff;
     }
-    else if (b_v <= -0x10000)//0xe0000000)
+    else if (b_v <= -0x1000000)//0xe0000000)
     {
       // yes, this is intentionally asymmetrical...
       // it seemed to sound ok?
       
       //b_v = 0xe0000001;
-      b_v = -0x0ffff;
+      //Serial.print("-");
+      b_v = -0x0ffffff;
     }
     //b_v = b_vnc + ((-b_vnc + b_v) * 0.9840);
     //                                         
@@ -130,8 +168,9 @@ void AudioFilterKarlsen::update(void)
     p++;
   }
 
-  transmit(block);
-  release(block);
+  transmit(audio_block);
+  release(audio_block);
+  release(control_block);
 
 }
 

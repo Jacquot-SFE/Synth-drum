@@ -11,7 +11,7 @@
 class AudioFilterKarlsen : public AudioStream
 {
 public:
-  AudioFilterKarlsen() : AudioStream(1, inputQueueArray) 
+  AudioFilterKarlsen() : AudioStream(2, inputQueueArray) 
   {
     b_aflt1 = b_aflt2 = b_aflt3 = b_aflt4 = 0;
     
@@ -28,15 +28,27 @@ public:
   {
     resonance = val;
   };
+    
+  void octaveControl(float n) 
+  {
+    // filter's corner frequency is Fcenter * 2^(control * N)
+    // where "control" ranges from -1.0 to +1.0
+    // and "N" allows the frequency to change from 0 to 7 octaves
+    if (n < 0.0) n = 0.0;
+    else if (n > 6.9999) n = 6.9999;
+    setting_octavemult = n * 4096.0;
+  }
+
 
   using AudioStream::release;
   virtual void update(void);
 
 private:
-  audio_block_t *inputQueueArray[1];
+  audio_block_t *inputQueueArray[2];
 
   int16_t frequency;
   int16_t resonance;
+  int32_t setting_octavemult; // q3.12 - 7 octaves max modulation
 
   int32_t b_aflt1, b_aflt2, b_aflt3, b_aflt4;
 
