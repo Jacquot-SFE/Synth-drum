@@ -15,7 +15,7 @@ AudioFilterKarlsen   filter;
 AudioEffectEnvelope  vca;
 
 
-AudioOutputI2S       i2s1;           
+AudioOutputI2S       i2s1;
 AudioControlSGTL5000 sgtl5000_1;
 
 /***************/
@@ -47,25 +47,25 @@ uint16_t param_update()
   //filter.q((value * 3) >>2);// constrain range to 3/4's of adc val to prevent freakout.
   //filter.q(0x2000);
 
-  
+
   // To experiement with input levels.
   // I think the filter runs out of resolution and misbehaves when
   // it runs out of headroom.
   // In particular, i was seeing that manual frequency sweeps at hi resonance were causing
-  // a funny signal-related DC offset to be introduced...restricting the input appears to 
+  // a funny signal-related DC offset to be introduced...restricting the input appears to
   // prevent that.  Apparently, attenuate by ~0.2 or more to prevent it...
   value = analogRead(A12);
-  gen.amplitude((float)value/0x3ff);
+  gen.amplitude((float)value / 0x3ff);
 
   // and then make up the loss with the output control.
   value = analogRead(A13);
-  sgtl5000_1.volume((float)value/0x3ff);
-  
+  sgtl5000_1.volume((float)value / 0x3ff);
+
   value = (analogRead(A1) << 5);//was 5...1/2 the range means better LF resolution...
-  filter.cutoff(value+1);//+100);
+  filter.cutoff(value + 1); //+100);
   //filter.cutoff(0x2000);
 
-  return(value);
+  return (value);
 }
 
 void setup() {
@@ -111,37 +111,37 @@ void loop() {
 
   peek = param_update();
 
-  if(millis() > next)
+  if (millis() > next)
   {
     next += 2000;//125;
 
-    switch(count % 4)
+    switch (count % 4)
     {
       case 0:
         gen.frequency(66);
         gen.phase(0);
         vca.noteOn();
-      break;
+        break;
 
       case 1:
         vca.noteOff();
-      break;
+        break;
 
       case 2:
         gen.frequency(100);
         gen.phase(0);
         vca.noteOn();
-      break;
+        break;
 
       case 3:
         vca.noteOff();
-      break;
+        break;
     }
 
     count++;
 
     Serial.println(peek, HEX);
-    
+
     Serial.print("Diagnostics: ");
     Serial.print(" max, buffs: ");
     Serial.print(AudioProcessorUsageMax());
@@ -153,6 +153,7 @@ void loop() {
     Serial.print(paramf, HEX);
     Serial.print(" q: ");
     Serial.println(paramq, HEX);
+    
   }
 
 }

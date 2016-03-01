@@ -62,6 +62,7 @@ void AudioFilterKarlsen::update(void)
     sample = *p;
 
     // Trying to come to term with the variable names in the original.
+    // I think some of the names get recycled as temps for calculations
     //-------------------------
     // The "b_" are just prefixes for variables...a BEOS convention?
     // b_fres is the resonance parameter (0..4)
@@ -82,20 +83,24 @@ void AudioFilterKarlsen::update(void)
 
     //double b_vnc = b_v; // clip, and adding back some nonclipped, to get a dynamic like analog.
     b_vnc = b_v;
-#if 0
+#if 1
     //if (b_v > 1) {b_v = 1;} else if (b_v < -1) {b_v = -1;}
     // fixed pt impl is using q3.29 to clip at 0x2000.0000 and 0xe000.0000
-    if(b_v >= 0x20000000)
+    if(b_v >= 0x1000000)
     {
-      b_v = 0x1fffffff;
+      b_v = 0x0ffffff;
     }
-    else if (b_v <= 0xe0000000)
+    else if (b_v <= -0x10000)//0xe0000000)
     {
-      b_v = 0xe0000001;
+      // yes, this is intentionally asymmetrical...
+      // it seemed to sound ok?
+      
+      //b_v = 0xe0000001;
+      b_v = -0x0ffff;
     }
     //b_v = b_vnc + ((-b_vnc + b_v) * 0.9840);
     //                                         
-    temp = (multiply_32x32_rshift32((b_v - b_vnc), 0x7df3b644 );
+    temp = multiply_32x32_rshift32((b_v - b_vnc), 0x7df3b644 );
     b_v = b_vnc + temp;
 #endif
 

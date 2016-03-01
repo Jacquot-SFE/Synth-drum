@@ -64,9 +64,9 @@ void param_update()
   inmix.gain(1, (float)(value*1.3/0x3ff));
 
   value = analogRead(A1);
-  value &= 0x3fc;
-  value |=1;
-  dlyctrl.amplitude((float)value/0x3ff, 10);
+  //value &= 0x3fc;
+  //value |=1;
+  dlyctrl.amplitude((float)value/0x3ff, 2);
 
   // output volume control.
   value = analogRead(A13);
