@@ -63,12 +63,12 @@ uint16_t param_update()
   
 
   // and then make up the loss with the output control.
-  value = analogRead(A13);
+  value = analogRead(A20);
   sgtl5000_1.volume((float)value / 0x3ff);
 
-  value = (analogRead(A1) << 5);//was 5...1/2 the range means better LF resolution...
-  filter.cutoff(value + 1); //+100);
-  //filter.cutoff(0x2000);
+  value = (analogRead(A1));//was 5...1/2 the range means better LF resolution...
+  filter.cutoff((value<<5) + 1); //+100);
+  //filter.cutoff((value * 10.0)+20);
 
   return (value);
 }
@@ -88,13 +88,13 @@ void setup() {
   gen.begin(WAVEFORM_SAWTOOTH);
   //gen.begin(WAVEFORM_SQUARE);
 
-  lfo.frequency(10);
+  lfo.frequency(.50);
   lfo.amplitude(0.5); // amplitude of 1 means 2 octaves peak-peak
-  //lfo.begin(WAVEFORM_SINE);
-  lfo.begin(WAVEFORM_SQUARE);
+  lfo.begin(WAVEFORM_SINE);
+  //lfo.begin(WAVEFORM_SQUARE);
   //lfo.begin(WAVEFORM_SAWTOOTH);
 
-  filter.octaveControl(1.0);
+  filter.octaveControl(0.0);
 
   vca.attack(50);
   vca.decay(250);
