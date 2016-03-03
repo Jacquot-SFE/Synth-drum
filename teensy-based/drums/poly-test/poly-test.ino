@@ -105,19 +105,19 @@ static const uint8_t sequence[PATT_LEN] =
 #if 0
   //shaker and toms....
   //S123OCSK
-  0b11000001,
-  0b00000000,
-  0b00100000,
-  0b00000000,
-  0b10010001,
+  0b01000001,
   0b00000000,
   0b10100000,
+  0b10000000,
+  0b00010001,
   0b00000000,
-  0b11000001,
+  0b10100000,
+  0b10000000,
+  0b01000001,
   0b01000000,
   0b10000000,
-  0b00100000,
-  0b10100001,
+  0b10100000,
+  0b00100001,
   0b00000000,
   0b10010000,
   0b10010000,
@@ -125,20 +125,20 @@ static const uint8_t sequence[PATT_LEN] =
   //kick, snare & hats
   0b00000101,
   0b00000100,
-  0b10000100,
-  0b10000101,
+  0b00000100,
+  0b00000101,
   0b00000110,
   0b00000100,
-  0b10001001,
-  0b10000010,
+  0b00001001,
+  0b00000010,
   0b00000101,
   0b00000100,
-  0b10000100,
-  0b10000100,
+  0b00000100,
+  0b00000100,
   0b00000110,
   0b00000100,
-  0b10010100,
-  0b10000100,
+  0b00010100,
+  0b00000100,
 #endif
 };
 
@@ -341,7 +341,29 @@ void paramUpdate2()
 }
 #endif
 
-static uint32_t next;
+static uint32_t next, pause;
+
+void paramUpdate3()
+{
+  uint16_t volume;
+  uint32_t tempo;
+
+  volume = analogRead(A20);
+  
+  sgtl5000_1.volume(((float)volume)/0x3ff);
+
+  tempo = analogRead(A15);
+
+  tempo = 0x3ff - tempo;
+
+  tempo *= 225;
+  tempo >>= 10;
+  tempo &= 0x3ff;
+
+  pause = tempo + 75;
+}
+
+
 
 
 void setup() {
@@ -379,10 +401,11 @@ void loop() {
 
   paramUpdate1();// kik,snr,hat
   paramUpdate2();// toms, shaker
+  paramUpdate3();// master volume & tempo
 
   if (millis() >= next)
   {
-    next = millis() + 200;//125;
+    next = millis() + pause;
 
     trigger();
 

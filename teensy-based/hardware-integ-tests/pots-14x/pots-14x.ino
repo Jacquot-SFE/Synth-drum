@@ -1,8 +1,8 @@
-static const uint8_t NUM_POTS = 14;
+static const uint8_t NUM_POTS = 16;
 
 uint16_t last_seen_val[NUM_POTS];
 
-static const uint32_t analog_pin_lut[NUM_POTS] = {A1, A2, A3, A6, A7, A10, A11, A12, A13, A14, A16, A17, A18, A19};
+static const uint32_t analog_pin_lut[NUM_POTS] = {A1, A2, A3, A6, A7, A10, A11, A12, A13, A14, A16, A17, A18, A19, A20, A15};
 
 uint32_t next;
 
