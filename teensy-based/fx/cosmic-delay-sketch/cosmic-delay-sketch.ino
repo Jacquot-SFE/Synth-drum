@@ -69,7 +69,7 @@ void param_update()
   dlyctrl.amplitude((float)value/0x3ff, 2);
 
   // output volume control.
-  value = analogRead(A13);
+  value = analogRead(A20);
   sgtl5000_1.volume((float)value/0x3ff);
 }
 
