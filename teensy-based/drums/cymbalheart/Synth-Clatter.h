@@ -35,7 +35,7 @@ class AudioSynthClatter : public AudioStream
 {
 public:
 
-  AudioSynthClatter() : AudioStream(1, inputQueueArray) 
+  AudioSynthClatter() : AudioStream(2, inputQueueArray) 
   {
     next_trip[0] = half_waves[0] = (AUDIO_SAMPLE_RATE_EXACT/(800*2));
     next_trip[1] = half_waves[1] = (AUDIO_SAMPLE_RATE_EXACT/(540*2));
@@ -54,7 +54,7 @@ public:
   uint32_t values[6];
 
 private:
-  audio_block_t *inputQueueArray[1];
+  audio_block_t *inputQueueArray[2];
 
   // Denominators are values calculated from CYNBAL values
   uint32_t half_waves[6];// = {110,125,140,155,189,202};

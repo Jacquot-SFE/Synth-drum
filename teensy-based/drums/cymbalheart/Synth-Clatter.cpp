@@ -30,14 +30,23 @@
 
 void AudioSynthClatter::update(void)
 {
-  audio_block_t *out_block_p;
-  int16_t *p_wave, *end;
-  bool a, b;
+  audio_block_t *out_block_p, *bell_block_p;
+  int16_t *p_wave, *p_bell, *end;
+  //bool a, b;
 
   out_block_p = allocate();
-  if (!out_block_p) return;
+  if (!out_block_p) 
+  {
+    return;
+  }
   p_wave = (out_block_p->data);
   end = p_wave + AUDIO_BLOCK_SAMPLES;
+
+  bell_block_p = allocate();
+  if(bell_block_p)
+  {
+    p_bell = bell_block_p->data;
+  }
 
   while(p_wave < end)
   {
@@ -59,8 +68,13 @@ void AudioSynthClatter::update(void)
     }
 
 #if 1
-    // additive from TR808?
+    // additive from TR808
     *p_wave = values[0] + values[1] + values[2] - values[3] - values[4] - values[5];
+
+    if(bell_block_p)
+    {
+      *p_bell++ = values[0] + values[1];
+    }
 #else
     // cascaded XOR from Cynbal...
     // easy 3-bit xor: add the three values.  LSB reflects the xor of the values.
@@ -71,6 +85,12 @@ void AudioSynthClatter::update(void)
 
     p_wave++;
     
+  }
+
+  if(bell_block_p)
+  {
+    transmit(bell_block_p, 1);
+    release(bell_block_p);
   }
 
   transmit(out_block_p, 0);

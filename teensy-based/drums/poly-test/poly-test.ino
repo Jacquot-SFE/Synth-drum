@@ -15,6 +15,7 @@
 #define SNARE
 #define TOM
 #define SHAKER
+#define BELL
 
 // Used by multiple instruments:
 AudioSynthNoiseWhite   noise;
@@ -25,6 +26,11 @@ AudioSynthClatter      clat1;
 AudioSynthDecay        hatdecay;
 AudioFilterBiquad      hatfilter;
 AudioEffectMultiply    hatmult;
+#endif
+
+#ifdef BELL
+AudioSynthDecay        belldecay;
+AudioEffectMultiply    bellmult;
 #endif
 
 #ifdef KICK
@@ -64,6 +70,12 @@ AudioConnection          patchCord02(hatfilter, 0, hatmult, 0);
 //AudioConnection          patchCord01(hatdecay, 0, hatmult, 0);
 AudioConnection          patchCord03(hatdecay, 0, hatmult, 1);
 AudioConnection          patchCord90(hatmult, 0, mixer1, 0);
+#endif
+
+#ifdef BELL
+AudioConnection          patchCord04(clat1, 1, bellmult, 0);
+AudioConnection          patchCord05(belldecay, 0, bellmult, 1);
+AudioConnection          patchCord96(bellmult, 0,  mixer2, 2);
 #endif
 
 #ifdef KICK
@@ -125,20 +137,20 @@ static const uint8_t sequence[PATT_LEN] =
   //kick, snare & hats
   0b00000101,
   0b00000100,
-  0b00000100,
-  0b00000101,
+  0b10000100,
+  0b10000101,
   0b00000110,
   0b00000100,
-  0b00001001,
-  0b00000010,
+  0b10001001,
+  0b10000010,
   0b00000101,
   0b00000100,
-  0b00000100,
-  0b00000100,
+  0b10000100,
+  0b10000100,
   0b00000110,
   0b00000100,
-  0b00010100,
-  0b00000100,
+  0b10010100,
+  0b10000100,
 #endif
 };
 
@@ -202,7 +214,8 @@ void trigger()
 #ifdef SHAKER  
   if (step & 0x80)
   {
-    shakedecay.noteOn();
+    //shakedecay.noteOn();
+    belldecay.noteOn();
   }
 #endif
   AudioInterrupts();
@@ -228,7 +241,10 @@ void paramInit()
 
   //hatdecay.frequency(1500);
   //hatdecay.length(50);
-  
+#endif
+
+#ifdef BELL
+  belldecay.length(333);
 #endif
 
 #ifdef KICK
@@ -272,7 +288,7 @@ void paramInit()
   mixer1.gain(3, 0.75);// mix2
   mixer2.gain(0, 0.75);// tom
   mixer2.gain(1, 0.5);//shaker
-  mixer2.gain(2, 0.0);// 
+  mixer2.gain(2, 0.5);// bell
   mixer2.gain(3, 0.0);
 }
 
