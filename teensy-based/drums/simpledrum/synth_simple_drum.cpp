@@ -91,9 +91,9 @@ void AudioSynthSimpleDrum::update(void)
 {
   audio_block_t *block_wav;
   int16_t *p_wave, *end;
-  int32_t sin_l, sin_r, interp, mod, mod2;
+  int32_t sin_l, sin_r, interp, mod, mod2, delta;
   int32_t interp2;
-  uint32_t index, scale;
+  int32_t index, scale;
   bool do_second;
 
   int32_t env_sqr_current; // the square of the linear value - inexpensive quasi exponential decay.
@@ -161,29 +161,29 @@ void AudioSynthSimpleDrum::update(void)
       }
     
       // Phase to Sine lookup * interp:
-
       index = wav_phasor >> 23; // take top valid 8 bits
       sin_l = AudioWaveformSine[index];
       sin_r = AudioWaveformSine[index+1];
 
+      // The fraction of the phasor in time we are between L and R
+      // is the same as the fraction of the ampliture of that interval we should add 
+      // to L.
+      delta = sin_r-sin_l;
       scale = (wav_phasor >> 7) & 0xFFFF;
-      sin_r *= scale;
-      sin_l *= 0xFFFF - scale;
-      interp = (sin_l + sin_r) >> 16;
-      
-#if 1
+      delta = (delta * scale)>> 16;
+      interp = sin_l + delta;
+
       if(do_second)
       {
         index = wav_phasor2 >> 23; // take top valid 8 bits
         sin_l = AudioWaveformSine[index];
         sin_r = AudioWaveformSine[index+1];
 
+        delta = sin_r-sin_l;
         scale = (wav_phasor2 >> 7) & 0xFFFF;
-        sin_r *= scale;
-        sin_l *= 0xFFFF - scale;
-        interp2 = (sin_l + sin_r) >> 16;
+        delta = (delta * scale)>> 16;
+        interp2 = sin_l + delta;
       }
-#endif        
 
       if(do_second)
       {
