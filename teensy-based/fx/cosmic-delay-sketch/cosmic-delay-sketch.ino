@@ -4,7 +4,7 @@
 #include <SD.h>
 #include <SerialFlash.h>
 
-#include "cosmic-delay.h"
+#include "mod-delay.h"
 #include "cubic-distort.h"
 
 /***************/
@@ -16,8 +16,8 @@ AudioSynthNoiseWhite noise;
 
 AudioMixer4              inmix;
 AudioSynthWaveformDc     dlyctrl;
-AudioEffectCosmicDelay   xdly;
-AudioFilterBiquad        aliasfilt;
+AudioEffectModDelay      xdly;
+AudioFilterBiquad        delayfilt;
 AudioEffectCubicDistort  fbdist;
 AudioMixer4              outmix;
 
@@ -30,14 +30,14 @@ AudioConnection     patchCord01(gen, 0, vca, 0);
 AudioConnection     patchCord02(vca, 0, inmix, 0);
 AudioConnection     patchCord03(noise, 0, inmix, 2);
 AudioConnection     patchCord04(inmix, 0, fbdist, 0);
-AudioConnection     patchCord05(fbdist, 0, aliasfilt, 0);
-AudioConnection     patchCord06(aliasfilt, 0, xdly, 0);
-AudioConnection     patchCord07(xdly, 0, inmix, 1);
+AudioConnection     patchCord05(fbdist, 0, xdly, 0);
+AudioConnection     patchCord06(xdly, 0, delayfilt, 0);
+AudioConnection     patchCord07(delayfilt, 0, inmix, 1);
 
 AudioConnection     patchCord100(dlyctrl,0, xdly, 1);
 
 AudioConnection     patchCord09(vca, 0, outmix, 0);
-AudioConnection     patchCord10(xdly, 0, outmix, 1);
+AudioConnection     patchCord10(delayfilt, 0, outmix, 1);
 
 AudioConnection     patchCord11(outmix, 0, i2s1, 0);
 AudioConnection     patchCord12(outmix, 0, i2s1, 1);
@@ -101,8 +101,8 @@ void setup() {
   // Lowpass tunung and Q have a lot to do with breakaway character and behavior!
   // If the Q gets too high, runaway gets more distorted.  0.4 or 0.5 make for
   // more aggressive breakaway, but also get crunchy.  0.2 almost doesn't break.
-  aliasfilt.setLowpass(0, 5000, 0.4);
-  aliasfilt.setHighpass(1, 120, 0.6);
+  delayfilt.setLowpass(0, 5000, 0.4);
+  delayfilt.setHighpass(1, 120, 0.6);
 
   outmix.gain(0, 1.0);
   outmix.gain(1, 1.0);

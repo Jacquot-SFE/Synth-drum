@@ -1,19 +1,25 @@
+/*
+ * Cubic distortion waveshaper.
+ * 
+ * Extracted from The MusicDSP list "Moog VCF, variation #1" filter
+ * http://musicdsp.org/showArchiveComment.php?ArchiveID=25
+ * 
+ * Implements the function:
+ * output = input - (1/n*(input^3))
+ * 
+ * Which is a gradual s-shaped input:output transfer characteristic
+ * for soft clipping.
+ * 
+ * 'n' determines the severity of the flattening of the curve,
+ * and also the maximum output value. 
+ * 
+ */
+
  #include "cubic-distort.h"
  #include "utility/dspinst.h"
 
-/*
- * Inspired by;
- * http://musicdsp.org/showArchiveComment.php?ArchiveID=154
- * 
- * But some details changed for Teensy Audio.
- * No feedback within the class, just done externally
- * so we can add filters and stuff to the loop.
- * 
- * Delay time is an input to the block, and functions from 0 to 0x7fff,
- * scaling the block length accordingly.
- */
  
- void AudioEffectCubicDistort::update(void)
+void AudioEffectCubicDistort::update(void)
 {
 	audio_block_t *audioblock;
 	int16_t *data, *end;

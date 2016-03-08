@@ -1,11 +1,8 @@
- #include "cosmic-delay.h"
- //#include "utility/dspinst.h"
-
 /*
  * Inspired by;
  * http://musicdsp.org/showArchiveComment.php?ArchiveID=154
  * 
- * But some details changed for Teensy Audio.
+ * But details changed for Teensy Audio.
  * No feedback within the class, just done externally
  * so we can add filters and stuff to the loop.
  * 
@@ -13,9 +10,11 @@
  * scaling the block length accordingly.
  */
 
- #define INTERPOLATE (1)
+#include "mod-delay.h"
 
- void AudioEffectCosmicDelay::update(void)
+#define INTERPOLATE (1)
+
+ void AudioEffectModDelay::update(void)
 {
 	audio_block_t *audioblock, *controlblock;
 	int16_t *data, *end, *ctrl;
@@ -53,6 +52,7 @@
     }
 
 #ifdef INTERPOLATE
+    // 
     interp_delta =  (buffer_length * (*ctrl));
     delay_delta = interp_delta >> 15;   // MSB's for delay len
     interp_delta &= 0x7fff;             //LSBs for interp distance

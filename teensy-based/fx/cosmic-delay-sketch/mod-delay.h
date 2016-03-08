@@ -1,16 +1,16 @@
 
 #pragma once
  
-#ifndef _cosmic_delay_h_
-#define _cosmic_delay_h_
+#ifndef _mod_delay_h_
+#define _mod_delay_h_
 
 
 #include "AudioStream.h"
 
-class AudioEffectCosmicDelay   : public AudioStream
+class AudioEffectModDelay   : public AudioStream
 {
 public:
-	AudioEffectCosmicDelay   (void) : AudioStream(2, inputQueueArray) 
+	AudioEffectModDelay   (void) : AudioStream(2, inputQueueArray) 
 	{
     buffer_length = 0;
 	}
