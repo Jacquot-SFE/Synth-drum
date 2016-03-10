@@ -44,9 +44,9 @@ void paramUpdate()
 #endif
 
   drum1.length((len * 2) + 50); // 50 .. 2097 mSec
-  drum1.pitchMod(bend);
+  drum1.pitchMod((float)bend/0x3ff);
   drum1.frequency(30 + (pitch>>1));
-  drum1.second(sec);
+  drum1.secondMix((float)sec/0x3ff);
 
 }
 

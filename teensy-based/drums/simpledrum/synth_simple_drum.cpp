@@ -35,53 +35,73 @@ extern const int16_t AudioWaveformSine[257];
 }
 
 
-static bool trap;
-
 void AudioSynthSimpleDrum::noteOn(void)
 {
   __disable_irq();
 
-  //if(env_lin_current < 0x0ffff)
-  {
-    wav_phasor = 0;
-    wav_phasor2 = 0;
-  }
-
+  wav_phasor = 0;
+  wav_phasor2 = 0;
   env_lin_current = 0x7fff0000;
-  
-  trap = false;
   
   __enable_irq();
 }
 
-void AudioSynthSimpleDrum::pitchMod(int32_t depth)
+void AudioSynthSimpleDrum::secondMix(float level)
 {
-  int32_t calc;
+  // As level goes from 0.0 to 1.0,
+  // second goes from 0 to 1/2 scale
+  // first goes from full scale to half scale. 
 
-  // Depth is 10-bit ADC value
-  // call it 1.9 fixed pt fmt
-  // Lets turn it into 2.14, in range between -0.75 and 2.9999
-  // It becomes the scalar for the modulation component of the phasor increment.
-  if(depth < 0x200)
+  if(level < 0)
   {
-    // 0 to 0x200 becomes
-    // -0x3000 (AKA 0xffffCfff) to 0 ()
+    level = 0;
+  }
+  else if(level > 1.0)
+  {
+    level = 1.0;
+  }
+    
+  wav_amplitude2 = level * 0x3fff;
+  wav_amplitude1 = 0x7fff - wav_amplitude2;
+}
 
-    // TBD - do I have a sign/scaling problem?  do I need signed 3.13?
-    calc = ((0x200 - depth) * 0x3000 )>> 9;
+
+void AudioSynthSimpleDrum::pitchMod(float depth)
+{
+  int32_t intdepth, calc;
+
+  // Validate parameter
+  if(depth < 0)
+  {
+    depth = 0;
+  }
+  else if(depth > 1.0)
+  {
+    depth = 1.0;
+  }
+
+  // Depth is float, 0.0..1.0
+  // turn 0.0 to 1.0 into
+  // 0x0 to 0x3fff;
+  intdepth = depth * 0x7fff;
+
+  // Lets turn it into 2.14, in range between -0.75 and 2.9999, woth 0 at 0.5
+  // It becomes the scalar for the modulation component of the phasor increment.
+  if(intdepth < 0x4000)
+  {
+    // 0 to 0x4000 becomes
+    // -0x3000 (AKA 0xffffCfff) to 0 ()
+    calc = ((0x4000 - intdepth) * 0x3000 )>> 14;
     calc = -calc;
   }
   else
   {
-    // 0x200 to 0x3ff becomes
+    // 0.5 to 1.0 becomes
     // 0x00 to 0xbfa0
-
-    // Again - mind the sign bit better??
-    calc = ((depth - 0x200) * 0xc000)>> 9;
+    calc = ((intdepth - 0x4000) * 0xc000)>> 14;
   }
 
   // Call result 2.14 format (max of ~3.99...approx 4)
-
   wav_pitch_mod = calc;
 }
 
@@ -105,7 +125,7 @@ void AudioSynthSimpleDrum::update(void)
   p_wave = (block_wav->data);
   end = p_wave + AUDIO_BLOCK_SAMPLES;
 
-  do_second = (wav_second_amplitude > 5);
+  do_second = (wav_amplitude2 > 33);
 
   while(p_wave < end)
   {
@@ -136,17 +156,6 @@ void AudioSynthSimpleDrum::update(void)
       // Don't put data in the sign bits unless you mean it!
       mod = signed_multiply_32x16b((env_sqr_current), (wav_pitch_mod>>1)) >> 13;      
       mod2 = signed_multiply_32x16b(wav_increment<<3, mod>>1);
-#if   0
-      if(!trap)
-      {
-        Serial.print(wav_increment, HEX);
-        Serial.print(' ');
-        Serial.print(mod, HEX);
-        Serial.print(' ');
-        Serial.println(mod2, HEX);
-        trap = true;
-      }
-#endif
     
       wav_phasor += (mod2);
       wav_phasor &= 0x7fffffff;
@@ -172,7 +181,8 @@ void AudioSynthSimpleDrum::update(void)
       scale = (wav_phasor >> 7) & 0xFFFF;
       delta = (delta * scale)>> 16;
       interp = sin_l + delta;
-
+      interp = (interp * wav_amplitude1) >> 15;
+      
       if(do_second)
       {
         index = wav_phasor2 >> 23; // take top valid 8 bits
@@ -183,12 +193,8 @@ void AudioSynthSimpleDrum::update(void)
         scale = (wav_phasor2 >> 7) & 0xFFFF;
         delta = (delta * scale)>> 16;
         interp2 = sin_l + delta;
-      }
-
-      if(do_second)
-      {
-        interp2 = (interp2 * (wav_second_amplitude << 5)) >> 15;
-        interp = (interp + interp2) >> 1;
+        interp2 = (interp2 * wav_amplitude2 ) >> 15;
+        interp = interp + interp2;
       }
 
       *p_wave = signed_multiply_32x16b(env_sqr_current, interp ) >> 15 ;
