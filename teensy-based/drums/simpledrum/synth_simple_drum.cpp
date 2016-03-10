@@ -1,5 +1,5 @@
 /* Audio Library for Teensy 3.X
- * Copyright (c) 2014, Paul Stoffregen, paul@pjrc.com
+ * Copyright (c) 2016, Byron Jacquot, SparkFun Electronics
  *
  * Development of this audio library was funded by PJRC.COM, LLC by sales of
  * Teensy and Audio Adaptor boards.  Please support PJRC's efforts to develop
@@ -24,16 +24,14 @@
  * THE SOFTWARE.
  */
 
+
 //#include <arm_math.h>
 
 #include "synth_simple_drum.h"
 
-
-// waveforms.c
 extern "C" {
 extern const int16_t AudioWaveformSine[257];
 }
-
 
 void AudioSynthSimpleDrum::noteOn(void)
 {
@@ -60,9 +58,11 @@ void AudioSynthSimpleDrum::secondMix(float level)
   {
     level = 1.0;
   }
-    
+
+  __disable_irq();
   wav_amplitude2 = level * 0x3fff;
   wav_amplitude1 = 0x7fff - wav_amplitude2;
+  __enable_irq();
 }
 
 
@@ -89,8 +89,8 @@ void AudioSynthSimpleDrum::pitchMod(float depth)
   // It becomes the scalar for the modulation component of the phasor increment.
   if(intdepth < 0x4000)
   {
-    // 0 to 0x4000 becomes
-    // -0x3000 (AKA 0xffffCfff) to 0 ()
+    // 0 to 0.5 becomes
+    // -0x3000 (0xffffCfff) to 0 ()
     calc = ((0x4000 - intdepth) * 0x3000 )>> 14;
     calc = -calc;
   }
@@ -102,6 +102,7 @@ void AudioSynthSimpleDrum::pitchMod(float depth)
   }
 
   // Call result 2.14 format (max of ~3.99...approx 4)
+  // See note in update().
   wav_pitch_mod = calc;
 }
 
@@ -118,14 +119,15 @@ void AudioSynthSimpleDrum::update(void)
 
   int32_t env_sqr_current; // the square of the linear value - inexpensive quasi exponential decay.
 
-
-
   block_wav = allocate();
   if (!block_wav) return;
   p_wave = (block_wav->data);
   end = p_wave + AUDIO_BLOCK_SAMPLES;
 
-  do_second = (wav_amplitude2 > 33);
+  // 50 is arbitrary threshold...
+  // low values of second are inaudible, and we can save CPU cycles
+  // by not calculating second when it's really quiet.
+  do_second = (wav_amplitude2 > 50);
 
   while(p_wave < end)
   {
@@ -150,18 +152,15 @@ void AudioSynthSimpleDrum::update(void)
       // Pitch mod is in range [-0.75 .. 3.99999] in 2.14 format
       // Current envelope value gets scaled by mod depth.
       // Then phasor increment gets scaled by that.
-      //
-      // Turn on the trap macro below if this confuses you...
-      //
-      // Don't put data in the sign bits unless you mean it!
       mod = signed_multiply_32x16b((env_sqr_current), (wav_pitch_mod>>1)) >> 13;      
       mod2 = signed_multiply_32x16b(wav_increment<<3, mod>>1);
-    
+
       wav_phasor += (mod2);
       wav_phasor &= 0x7fffffff;
 
       if(do_second)
       {
+        // A perfect fifth uses increment of 1.5 times regular increment
         wav_phasor2 += wav_increment;
         wav_phasor2 += (wav_increment >> 1);
         wav_phasor2 += mod2;
@@ -178,10 +177,9 @@ void AudioSynthSimpleDrum::update(void)
       // is the same as the fraction of the ampliture of that interval we should add 
       // to L.
       delta = sin_r-sin_l;
-      scale = (wav_phasor >> 7) & 0xFFFF;
+      scale = (wav_phasor >> 7) & 0xfFFF;
       delta = (delta * scale)>> 16;
       interp = sin_l + delta;
-      interp = (interp * wav_amplitude1) >> 15;
       
       if(do_second)
       {
@@ -193,7 +191,10 @@ void AudioSynthSimpleDrum::update(void)
         scale = (wav_phasor2 >> 7) & 0xFFFF;
         delta = (delta * scale)>> 16;
         interp2 = sin_l + delta;
+
+        // Then scale and add the two waves
         interp2 = (interp2 * wav_amplitude2 ) >> 15;
+        interp = (interp * wav_amplitude1) >> 15;
         interp = interp + interp2;
       }
 

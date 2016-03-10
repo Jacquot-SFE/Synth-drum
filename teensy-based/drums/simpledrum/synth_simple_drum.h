@@ -1,5 +1,5 @@
 /* Audio Library for Teensy 3.X
- * Copyright (c) 2014, Paul Stoffregen, paul@pjrc.com
+ * Copyright (c) 2016, Byron Jacquot, SparkFun Electronics
  *
  * Development of this audio library was funded by PJRC.COM, LLC by sales of
  * Teensy and Audio Adaptor boards.  Please support PJRC's efforts to develop
@@ -31,8 +31,6 @@
 #include "AudioStream.h"
 #include "utility/dspinst.h"
 
-//#define SAMPLES_PER_MSEC (AUDIO_SAMPLE_RATE_EXACT/1000.0)
-
 class AudioSynthSimpleDrum : public AudioStream
 {
 public:
@@ -42,7 +40,6 @@ public:
     length(600);
     frequency(60);
     pitchMod(0x200);
-    //wav_second= false;
     wav_amplitude1 = 0x7fff;
     wav_amplitude2 = 0;
   }
@@ -58,9 +55,6 @@ public:
     wav_increment = (freq * (0x7fffffffLL/AUDIO_SAMPLE_RATE_EXACT)) + 0.5;
   }
 
-  void secondMix(float level);
-  void pitchMod(float depth);
-
   void length(int32_t milliseconds)
   {
     if(milliseconds < 0)
@@ -73,9 +67,11 @@ public:
     env_decrement = (0x7fff0000/len_samples);
   };
 
+  void secondMix(float level);
+  void pitchMod(float depth);
+
   using AudioStream::release;
   virtual void update(void);
-
 
 private:
   audio_block_t *inputQueueArray[1];
@@ -96,6 +92,5 @@ private:
 
 };
 
-#undef SAMPLES_PER_MSEC
 #endif
 
