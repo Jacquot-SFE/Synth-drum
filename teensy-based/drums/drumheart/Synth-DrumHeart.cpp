@@ -27,8 +27,6 @@
 #include "Synth-DrumHeart.h"
 
 
-#define SECOND
-
 // waveforms.c
 extern "C" {
 extern const int16_t AudioWaveformSine[257];
@@ -39,69 +37,87 @@ extern const int16_t AudioWaveformSine[257];
 
 void AudioSynthDrumHeart::noteOn(void)
 {
-  //__disable_irq();
+  __disable_irq();
 
-  //if(env_lin_current < 0x0ffff)
-  {
-    wav_phasor = 0;
-    wav_phasor2 = 0;
-  }
+  wav_phasor = 0;
+  wav_phasor2 = 0;
 
   env_lin_current = 0x7fff0000;
   
-  //trap = false;
-  
-  //__enable_irq();
+  __enable_irq();
 }
 
-void AudioSynthDrumHeart::pitchMod(int32_t depth)
+void AudioSynthDrumHeart::secondMix(float level)
 {
-  int32_t calc;
+  // As level goes from 0.0 to 1.0,
+  // second goes from 0 to 1/2 scale
+  // first goes from full scale to half scale. 
 
-  // Depth is 10-bit ADC value
-  // call it 1.9 fixed pt fmt
-  // Lets turn it into 2.14, in range between -0.75 and ~2.9999
-  // It becomes the scalar for the modulation component of the phasor increment.
-  if(depth < 0x200)
+  if(level < 0)
   {
-    // 0 to 0x200 becomes
-    // -0x3000 (AKA 0xffffCfff) to 0 ()
+    level = 0;
+  }
+  else if(level > 1.0)
+  {
+    level = 1.0;
+  }
 
-    // TBD - do I have a sign/scaling problem?  do I need signed 3.13?
-    calc = ((0x200 - depth) * 0x3000 )>> 9;
+  __disable_irq();
+  wav_amplitude2 = level * 0x3fff;
+  wav_amplitude1 = 0x7fff - wav_amplitude2;
+  __enable_irq();
+}
+
+
+void AudioSynthDrumHeart::pitchMod(float depth)
+{
+  int32_t intdepth, calc;
+
+  // Validate parameter
+  if(depth < 0)
+  {
+    depth = 0;
+  }
+  else if(depth > 1.0)
+  {
+    depth = 1.0;
+  }
+
+  // Depth is float, 0.0..1.0
+  // turn 0.0 to 1.0 into
+  // 0x0 to 0x3fff;
+  intdepth = depth * 0x7fff;
+
+  // Lets turn it into 2.14, in range between -0.75 and 2.9999, woth 0 at 0.5
+  // It becomes the scalar for the modulation component of the phasor increment.
+  if(intdepth < 0x4000)
+  {
+    // 0 to 0.5 becomes
+    // -0x3000 (0xffffCfff) to 0 ()
+    calc = ((0x4000 - intdepth) * 0x3000 )>> 14;
     calc = -calc;
   }
   else
   {
-    // 0x200 to 0x3ff becomes
+    // 0.5 to 1.0 becomes
     // 0x00 to 0xbfa0
-
-    // Again - mind the sign bit better??
-    calc = ((depth - 0x200) * 0xc000)>> 9;
+    calc = ((intdepth - 0x4000) * 0xc000)>> 14;
   }
 
-#if   0
-  // can't do this if called by global c'tor: Serial isn't there until 
-  // setup() initializes it.  
-  Serial.print("calc: ");
-  Serial.println(calc, HEX);
-
   // Call result 2.14 format (max of ~3.99...approx 4)
-#endif  
-
+  // See note in update().
   wav_pitch_mod = calc;
 }
-
 
 
 void AudioSynthDrumHeart::update(void)
 {
   audio_block_t *block_wav, *block_env;
   int16_t *p_wave, *p_env, *end;
-  int32_t sin_l, sin_r, interp, mod, mod2;
+  int32_t sin_l, sin_r, interp, mod, mod2, delta;
   int32_t interp2;
-  uint32_t index, scale;
-
+  int32_t index, scale;
+  bool do_second;
 
   block_env = allocate();
   if (!block_env) return;
@@ -111,6 +127,8 @@ void AudioSynthDrumHeart::update(void)
   block_wav = allocate();
   if (!block_wav) return;
   p_wave = (block_wav->data);
+
+  do_second =  (wav_amplitude2 > 50);
 
   while(p_env < end)
   {
@@ -126,7 +144,8 @@ void AudioSynthDrumHeart::update(void)
       *p_env = env_sqr_current>>15;
     }  
 
-    // do wave second;
+
+    // then do waveforms 
     wav_phasor  += wav_increment;
 
     // modulation changes how we use the increment
@@ -150,21 +169,17 @@ void AudioSynthDrumHeart::update(void)
     wav_phasor += (mod2);
     wav_phasor &= 0x7fffffff;
 
-#ifdef SECOND
-    if(wav_second)
+    if(do_second)
     {
       // For a perfect fifth above, the second phasor increment
       // should be 1.5X the base.
-#if 1
       wav_phasor2 += wav_increment;
       wav_phasor2 += (wav_increment >> 1);
       wav_phasor2 += mod2;
       wav_phasor2 += (mod2 >> 1);
       wav_phasor2 &= 0x7fffffff;
-#endif      
     }
-#endif    
-    // then interp'd waveshape
+
     switch(wav_shape)
     {
       case SINE:
@@ -172,27 +187,29 @@ void AudioSynthDrumHeart::update(void)
         sin_l = AudioWaveformSine[index];
         sin_r = AudioWaveformSine[index+1];
 
+        //scale = (wav_phasor >> 7) & 0xFFFF;
+        //sin_r *= scale;
+        //sin_l *= 0xFFFF - scale;
+        //interp = (sin_l + sin_r) >> 16;
+        delta = sin_r - sin_l;
         scale = (wav_phasor >> 7) & 0xFFFF;
-        sin_r *= scale;
-        sin_l *= 0xFFFF - scale;
-        interp = (sin_l + sin_r) >> 16;
-#ifdef SECOND
-        if(wav_second)
+        delta = (delta * scale)>>16;
+        interp = sin_l + delta;
+
+        if(do_second)
         {
-#if 1          
           index = wav_phasor2 >> 23; // take top valid 8 bits
           sin_l = AudioWaveformSine[index];
           sin_r = AudioWaveformSine[index+1];
 
+          delta = sin_r - sin_l;
           scale = (wav_phasor2 >> 7) & 0xFFFF;
-          sin_r *= scale;
-          sin_l *= 0xFFFF - scale;
-          interp2 = (sin_l + sin_r) >> 16;
-#endif          
+          delta = (delta * scale)>>16;
+          interp2 = sin_l + delta;
         }
-#endif        
+        else
+          interp2 = 0;
       break;
-
       case TRIANGLE:
       {
         int8_t phaz = wav_phasor >> 29;
@@ -224,17 +241,16 @@ void AudioSynthDrumHeart::update(void)
           interp = 0x8000;
       break;
     }
-#ifdef SECOND
-    if(wav_second)
+    if(do_second)
     {
-      *p_wave = (interp + interp2) >> 1;
+      // Then scale and add the two waves
+      interp2 = (interp2 * wav_amplitude2 ) >> 15;
+      interp = (interp * wav_amplitude1) >> 15;
+      interp = interp + interp2;
     }
-    else
-#endif    
-    {
-      *p_wave = interp ;
-    }
+    *p_wave = interp ;
 
+ 
     p_env++;
     p_wave++;
  }

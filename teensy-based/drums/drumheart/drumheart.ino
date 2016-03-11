@@ -75,18 +75,19 @@ void paramUpdate()
   uint16_t len, bend, pitch;
 
   uint16_t mixadc, q, filtmod;
-  uint16_t shape, cutoff, trig;
+  uint16_t shape, cutoff, trig, secondskin;
   float    mix;
 
   len = analogRead(A1);
   bend = analogRead(A2);
-  pitch = analogRead(A0);
+  pitch = analogRead(A12);
   mixadc = analogRead(A6);
   q = analogRead(A7);
   filtmod = analogRead(A3);
   shape = analogRead(A10);
   cutoff = analogRead(A11);
   trig = analogRead(A14);
+  secondskin = analogRead(A13);
 
 #if 0
   Serial.print("Analog: ");
@@ -98,8 +99,9 @@ void paramUpdate()
 #endif
 
   drum1.length((len * 2) + 50); // 50 .. 2097 mSec
-  drum1.pitchMod(bend);
-  //drum1.frequency(30 + (pitch>>1));
+  drum1.pitchMod((float)bend/0x3ff);
+  drum1.frequency(30 + (pitch>>1));
+  drum1.secondMix((float)secondskin/0x3ff);
 
   drum1.waveshape(shape >> 8);
   
@@ -113,7 +115,7 @@ void paramUpdate()
   mixer.gain(0, (1.0 - mix));
   mixer.gain(1, (mix));
 
-  processTrig(trig);
+  //processTrig(trig);
 
 }
 
@@ -139,7 +141,7 @@ void setup() {
 
   AudioNoInterrupts();
   sgtl5000_1.enable();
-  sgtl5000_1.volume(0.75);
+  sgtl5000_1.volume(0.5);
 
   noise1.amplitude(0.5);
   //sine1.frequency(1);
@@ -172,7 +174,7 @@ void loop() {
   {
     next = millis() + 1000;
 
-    //trigger();
+    trigger();
 
     Serial.print("Diagnostics: max: ");
     Serial.print(max);
