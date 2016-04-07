@@ -1,8 +1,9 @@
 #include <SPI.h>
 
-static const int32_t CHIPSEL = 8;
+static const int32_t CHIPSEL_BTNS = 8;
+static const int32_t CHIPSEL_LEDS = 5;
 
-static const SPISettings registersettings(1000000, LSBFIRST, SPI_MODE0 );
+static const SPISettings registersettings(500000, MSBFIRST, SPI_MODE0 );
 
 uint32_t next;
 
@@ -14,8 +15,10 @@ void setup() {
   SPI.setSCK(14);
   SPI.begin();
   
-  pinMode(CHIPSEL, OUTPUT);
-  digitalWrite(CHIPSEL, LOW);
+  pinMode(CHIPSEL_BTNS, OUTPUT);
+  digitalWrite(CHIPSEL_BTNS, LOW);
+  pinMode(CHIPSEL_LEDS, OUTPUT);
+  digitalWrite(CHIPSEL_LEDS, LOW);
 
   next = millis() + 1000;
   
@@ -27,42 +30,37 @@ uint16_t current = 0;
 void loop() {
   // put your main code here, to run repeatedly:
 
-  uint8_t dataout[3];
+  static uint32_t dataout;
   //int8_t datain[3];
 
   if(millis() > next)
   {
 
-    next = millis()+500;
+    next = millis()+10;
 
-    Serial.println(current);
+    //Serial.println(current);
 
-    if(!(current & 0x8))
-    {
-      dataout[0] = 1 << (current & 0x07);
-      dataout[1] = 0;
-    }
-    else
-    {
-      dataout[0] = 0;
-      dataout[1] = 1 << (current & 0x07);
-    }
+    //dataout = 1 << (current % 8);
 
     SPI.beginTransaction(registersettings);
 
+    digitalWrite(CHIPSEL_BTNS, HIGH);
 
-    SPI.transfer(dataout, 2);
+    SPI.transfer(&dataout, 3);
 
-    digitalWrite(CHIPSEL, HIGH);
-    digitalWrite(CHIPSEL, LOW);
+    digitalWrite(CHIPSEL_LEDS, HIGH);
+    digitalWrite(CHIPSEL_BTNS, LOW);
+    digitalWrite(CHIPSEL_LEDS, LOW);
 
     SPI.endTransaction();
 
     current++;
 
-//    Serial.print(dataout[0], HEX);
-//    Serial.print(dataout[1], HEX);
-//    Serial.println(dataout[0], HEX);
+    dataout = ~dataout;
+
+    //Serial.print(dataout[0], HEX);
+    //Serial.print(dataout[1], HEX);
+    Serial.println(dataout, HEX);
 
   }
   

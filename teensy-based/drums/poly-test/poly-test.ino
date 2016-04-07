@@ -270,9 +270,9 @@ void paramInit()
   t1 = 60;
   t2 = 90;
   t3 = 135;
-  tom.second(true);
+  tom.secondMix(1.0);
   tom.length(250);
-  tom.pitchMod(0x300);
+  tom.pitchMod(0.75);
 #endif
 
 #ifdef SHAKER  
@@ -311,7 +311,7 @@ void paramUpdate1()
 
 #ifdef KICK
   kick.frequency(30 + (pitch >> 3));
-  kick.pitchMod(mod);
+  kick.pitchMod((float)mod/0x3ff);
   kick.length(len + 10);
 #endif
 #ifdef SNARE
@@ -350,8 +350,8 @@ void paramUpdate2()
   t3 = 30 + (p3 >> 1);
 
   tom.length(len + 10);
-  tom.pitchMod(mod);
-  tom.second(secondskin);
+  tom.pitchMod((float)mod/0x3ff);
+  tom.secondMix((float)secondskin/0x3ff);
 
   //shakedecay.length(slen + 10);
 }
@@ -365,7 +365,7 @@ void paramUpdate3()
   uint32_t tempo;
 
   volume = analogRead(A20);
-  
+
   sgtl5000_1.volume(((float)volume)/0x3ff);
 
   tempo = analogRead(A15);
