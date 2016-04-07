@@ -7,8 +7,8 @@
 #include "Synth-Clatter.h"
 #include "Synth-Decay.h"
 #include "Synth-DrumHeart.h"
-#include "synth_simple_drum.h"
 
+#include "panel-scan.h"
 
 #define HAT
 #define KICK
@@ -154,6 +154,8 @@ static const uint8_t sequence[PATT_LEN] =
 #endif
 };
 
+PanelScanner theScanner;
+
 // Globals for params on shared voices
 uint16_t openlen, closedlen;
 uint16_t t1, t2, t3;
@@ -164,6 +166,9 @@ void trigger()
   uint8_t step;
 
   step = sequence[index];
+
+  theScanner.setLED(index);
+  theScanner.doTransaction();
 
 #if 0
   Serial.print("Trigger: step#");
@@ -219,9 +224,9 @@ void trigger()
   }
 #endif
   AudioInterrupts();
+  theScanner.clearLED(index);
   index++;
   index &= 0x0f;
- 
 }
 
 
@@ -389,6 +394,9 @@ void setup() {
   Serial.println("Setup");
 
   pinMode(15, INPUT); // Volume pot pin?
+
+  theScanner.initScanning();
+  theScanner.doTransaction();
 
   // audio library init
   AudioMemory(20);
