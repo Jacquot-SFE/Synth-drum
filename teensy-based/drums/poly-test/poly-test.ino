@@ -7,8 +7,9 @@
 #include "Synth-Clatter.h"
 #include "Synth-Decay.h"
 #include "Synth-DrumHeart.h"
+#include "synth_simple_drum.h"
 
-#include "panel-scan.h"
+#include "panel-scanner.h"
 
 #define HAT
 #define KICK

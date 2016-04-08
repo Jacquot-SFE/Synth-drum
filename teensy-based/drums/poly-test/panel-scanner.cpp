@@ -1,7 +1,7 @@
 #include <SPI.h>
 #include <arduino.h>
 
-#include "panel-scan.h"
+#include "panel-scanner.h"
 
 static const int32_t CHIPSEL_BTNS = 8;
 static const int32_t CHIPSEL_LEDS = 5;
