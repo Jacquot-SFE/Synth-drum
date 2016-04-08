@@ -7,9 +7,12 @@
 #include "Synth-Clatter.h"
 #include "Synth-Decay.h"
 #include "Synth-DrumHeart.h"
-#include "synth_simple_drum.h"
+//#include "synth_simple_drum.h"
 
 #include "panel-scanner.h"
+#include "editor.h"
+#include "pattern.h"
+#include "player.h"
 
 #define HAT
 #define KICK
@@ -112,64 +115,27 @@ AudioConnection          patchCord99(mixer1, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;
 
 
-#define PATT_LEN 16
-static const uint8_t sequence[PATT_LEN] =
-{
-#if 0
-  //shaker and toms....
-  //S123OCSK
-  0b01000001,
-  0b00000000,
-  0b10100000,
-  0b10000000,
-  0b00010001,
-  0b00000000,
-  0b10100000,
-  0b10000000,
-  0b01000001,
-  0b01000000,
-  0b10000000,
-  0b10100000,
-  0b00100001,
-  0b00000000,
-  0b10010000,
-  0b10010000,
-#else
-  //kick, snare & hats
-  0b00000101,
-  0b00000100,
-  0b10000100,
-  0b10000101,
-  0b00000110,
-  0b00000100,
-  0b10001001,
-  0b10000010,
-  0b00000101,
-  0b00000100,
-  0b10000100,
-  0b10000100,
-  0b00000110,
-  0b00000100,
-  0b10010100,
-  0b10000100,
-#endif
-};
 
+// Appp construct singletons
 PanelScanner theScanner;
+Editor       theEditor;
+Pattern      thePattern; // TBD: multidimensional...
+Player       thePlayer;
 
 // Globals for params on shared voices
 uint16_t openlen, closedlen;
 uint16_t t1, t2, t3;
 
+#if 0
 void trigger()
 {
   static uint32_t index = 0;
   uint8_t step;
 
-  step = sequence[index];
+  step = thePattern.getStepData(index);// sequence[index];
 
-  theScanner.setLED(index);
-  theScanner.doTransaction();
+  //theScanner.setLED(index);
+  //theScanner.doTransaction();
 
 #if 0
   Serial.print("Trigger: step#");
@@ -229,7 +195,7 @@ void trigger()
   index++;
   index &= 0x0f;
 }
-
+#endif
 
 void paramInit()
 {
@@ -363,7 +329,7 @@ void paramUpdate2()
 }
 #endif
 
-static uint32_t next, pause;
+//static uint32_t next;
 
 void paramUpdate3()
 {
@@ -382,7 +348,8 @@ void paramUpdate3()
   tempo >>= 10;
   tempo &= 0x3ff;
 
-  pause = tempo + 75;
+  //pause = tempo + 75;
+  thePlayer.setPause(tempo+75);
 }
 
 
@@ -397,12 +364,13 @@ void setup() {
   pinMode(15, INPUT); // Volume pot pin?
 
   theScanner.initScanning();
-  theScanner.doTransaction();
+  //theScanner.doTransaction();
+
 
   // audio library init
   AudioMemory(20);
 
-  next = millis() + 1000;
+  //next = millis() + 1000;
 
   // read panel before we start to run
   //paramUpdate();
@@ -418,9 +386,16 @@ void setup() {
 
   AudioInterrupts();
 
+  delay(500);
+
+  Serial.println("Setup Complete");
 }
 
-void loop() {
+void loop() 
+{
+  uint32_t now = millis();
+  static uint32_t then;
+  
 #if 1
   // put your main code here, to run repeatedly:
 
@@ -428,12 +403,18 @@ void loop() {
   paramUpdate2();// toms, shaker
   paramUpdate3();// master volume & tempo
 
-  if (millis() >= next)
+  if(now > then)
   {
-    next = millis() + pause;
+    thePlayer.tick();
+  }
 
-    trigger();
+  if(now % 5 == 0)
+  {
+    theScanner.tick();
+  }
 
+  if(now % 5000 == 0)
+  {
     Serial.print("Diagnostics: ");
     Serial.print(" max, buffs: ");
     Serial.print(AudioProcessorUsageMax());
@@ -441,5 +422,7 @@ void loop() {
     Serial.println(AudioMemoryUsageMax());
     AudioProcessorUsageMaxReset();
   }
+
+  then = now;
 #endif  
 }

@@ -1,7 +1,9 @@
-#ifndef _PANEL_SCAN_H_
-#define _PANEL_SCAN_H_
+#ifndef _PANEL_SCANNER_H_
+#define _PANEL_SCANNER_H_
 
 #pragma once
+
+#include "editor.h"
 
 static const uint32_t NUM_PANELS = 3;
 
@@ -12,6 +14,8 @@ public:
 
   void initScanning();
 
+  void tick();
+
   void setLED(uint32_t num);
   void clearLED(uint32_t num);
 
@@ -20,11 +24,15 @@ public:
 
 private:
 
+  void readButtons();
+  void parseButtons();
 
-  uint8_t trans_buffer[NUM_PANELS];
-  uint8_t output_buffer[NUM_PANELS];
-  uint8_t input_buffer[NUM_PANELS];
-  
+  void writeLEDs();
+
+  uint8_t led_buffer[NUM_PANELS];
+  uint8_t old_buttons[NUM_PANELS];
+  uint8_t new_buttons[NUM_PANELS];
+
 };
 
 
