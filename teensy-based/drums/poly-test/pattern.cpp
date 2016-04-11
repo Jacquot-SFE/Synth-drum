@@ -2,7 +2,7 @@
 
 #include "pattern.h"
 
-static const uint32_t sequence[PATTERN_LEN] =
+static const uint32_t sequence[Pattern::PATTERN_LEN] =
 {
 #if 0
   //shaker and toms....
@@ -52,8 +52,27 @@ Pattern::Pattern()
   {
     pattern_data[i] = sequence[i];
   }
+
+  setCurrentVoice(0);
+
 }
 
+bool Pattern::toggleBit(uint32_t index)
+{
+  if(index >= PATTERN_LEN)
+  {
+    Serial.println("Overflow in toggle");
+    index %= PATTERN_LEN; 
+  }
+
+  pattern_data[index] ^= current_voice_mask;
+
+  return(pattern_data[index] & current_voice_mask);
+  
+}
+
+
+// Return all of the buts for the current step
 uint32_t Pattern::getStepData(uint32_t index)
 {
   if(index >= PATTERN_LEN)
@@ -63,6 +82,29 @@ uint32_t Pattern::getStepData(uint32_t index)
   }
   
   return pattern_data[index];
+}
+
+// Get all of the column data for a particular voice
+bool Pattern::getVoiceBit(uint32_t step)
+{
+  if(step >= PATTERN_LEN)
+  {
+    Serial.println("Overflow in pattern bit");
+    step %= PATTERN_LEN; 
+  }
+  
+  return (pattern_data[step] & current_voice_mask);
+}
+
+void Pattern::setCurrentVoice(uint32_t num)
+{
+  current_voice = num;
+  current_voice_mask = 1 << num;
+}
+
+uint32_t Pattern::getCurrentVoice(void)
+{
+  return current_voice;
 }
 
 

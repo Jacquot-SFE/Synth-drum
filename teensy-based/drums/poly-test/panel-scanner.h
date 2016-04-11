@@ -20,6 +20,7 @@ public:
 
   void setBackgroundLED(uint32_t num);
   void clearBackgroundLED(uint32_t num);
+  void clearAllBackgroundLEDs();
   void setOverlayLED(uint32_t num);
   void clearOverlayLED(uint32_t num);
 

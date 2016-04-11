@@ -49,8 +49,8 @@ void PanelScanner::clearAllLED()
 {
   for(uint32_t i = 0; i < NUM_PANELS; i++)
   {
-    led_background_buffer[i];
-    led_overlay_buffer[i];
+    led_background_buffer[i] = 0;
+    led_overlay_buffer[i] = 0;
   }
 }
 
@@ -89,6 +89,13 @@ void PanelScanner::clearBackgroundLED(uint32_t num)
   }
 }
 
+void PanelScanner::clearAllBackgroundLEDs()
+{
+    for(uint32_t i = 0; i < NUM_PANELS; i++)
+  {
+    led_background_buffer[i] = 0;
+  }
+}
 
 void PanelScanner::setOverlayLED(uint32_t num)
 {

@@ -15,6 +15,9 @@ public:
 
   void setPause(uint32_t millisec);
 
+  bool toggleMuteBit(uint32_t bit);
+  bool getMuteBit(uint32_t bit);
+
   void tick();
 
 private:
@@ -24,7 +27,8 @@ private:
   uint32_t prev_step;
   uint32_t pause_len;
   uint32_t next_time;
-  
+
+  uint32_t mutes;
 
 };
 

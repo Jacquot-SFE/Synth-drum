@@ -3,19 +3,33 @@
 
 #pragma once
 
+#include <stdint.h>
+
 // fwd decl for other headers
 class Editor;
 
 #include "panel-scanner.h"
+#include "editor-modes.h"
 
 class Editor
 {
 public: 
+
+  enum EditorMode
+  {
+    eMODE_STEP_EDIT = 0,
+    eMODE_VOICE_SEL,
+    eMODE_MUTE_SEL
+  };
+
   Editor();
 
   void receiveKey(uint32_t keynum, bool pressed);
+  void setMode(EditorMode);
   
 private:
+
+  pvEditorMode* current_mode_p;
 
 };
 

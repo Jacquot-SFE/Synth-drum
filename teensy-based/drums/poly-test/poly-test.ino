@@ -366,6 +366,7 @@ void setup() {
   theScanner.initScanning();
   //theScanner.doTransaction();
 
+  theEditor.setMode(Editor::eMODE_STEP_EDIT);
 
   // audio library init
   AudioMemory(20);

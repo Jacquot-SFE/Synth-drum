@@ -5,19 +5,28 @@
 
 #include <stdint.h>
 
-static const uint32_t PATTERN_LEN = 16;
 
 class Pattern
 {
 public: 
+  static const uint32_t PATTERN_LEN = 16;
+
   Pattern();
 
-  void setBit(uint32_t step, uint32_t bit_num);
+  bool toggleBit(uint32_t step);
+
+  void setCurrentVoice(uint32_t);
+  uint32_t getCurrentVoice(void);
 
   uint32_t getStepData(uint32_t index);
+  bool     getVoiceBit(uint32_t step);
 private:
 
   uint32_t pattern_data[PATTERN_LEN];
+
+  uint32_t current_voice;
+  uint32_t current_voice_mask;
+  
 
 };
 

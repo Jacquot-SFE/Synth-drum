@@ -42,6 +42,8 @@ Player::Player()
   playing = false;
   current_step = 0;
 
+  mutes = 0;
+
   pause_len = 125;// milliseconds, 125 mS = 120 bpm
 }
 
@@ -69,6 +71,25 @@ void Player::setPause(uint32_t millisec)
   pause_len = millisec;
 }
 
+bool Player::toggleMuteBit(uint32_t bit)
+{
+  if(bit > 8)
+    return false;
+
+  mutes ^= (1 << bit);
+
+  return (mutes & (1 << bit));
+}
+ 
+bool Player::getMuteBit(uint32_t bit)
+{
+  if(bit > 8)
+    return false;
+
+  return (mutes & (1 << bit));
+}
+
+
 void Player::tick()
 {
   uint32_t now = millis();
@@ -87,6 +108,9 @@ void Player::tick()
    
   //
   uint8_t trigdata = thePattern.getStepData(current_step);
+
+  // Apply mutes
+  trigdata &= (~mutes);
 
   theScanner.clearOverlayLED(prev_step);
   theScanner.setOverlayLED(current_step);
