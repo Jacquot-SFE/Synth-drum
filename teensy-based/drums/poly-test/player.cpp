@@ -3,6 +3,7 @@
 
 #include "player.h"
 #include "pattern.h"
+#include "panel-scanner.h"
 
 // TBD: clean this mess up
 // ugly way to get to the voices...
@@ -32,6 +33,7 @@ extern uint16_t t1, t2, t3;
 
 // Similar, for the pattern...
 extern Pattern thePattern;
+extern PanelScanner theScanner;
 
 
 // constructor...
@@ -47,11 +49,14 @@ void Player::start()
 {
   playing = true;
   current_step = 0;
+  theScanner.setOverlayLED(0x17);
 }
 
 void Player::stop()
 {
   playing = false;
+  theScanner.clearOverlayLED(0x17);
+  theScanner.clearOverlayLED(prev_step);
 }
 
 bool Player::isPlaying()
@@ -83,7 +88,8 @@ void Player::tick()
   //
   uint8_t trigdata = thePattern.getStepData(current_step);
 
-  //theScanner.setLED(index);
+  theScanner.clearOverlayLED(prev_step);
+  theScanner.setOverlayLED(current_step);
   //theScanner.doTransaction();
 
 #if 1
@@ -140,7 +146,10 @@ void Player::tick()
   }
 #endif
   AudioInterrupts();
-  //theScanner.clearLED(index);
+
+  // Keep track of previous step so we can turn
+  // it's LED off
+  prev_step = current_step; 
   current_step++;
   current_step &= 0x0f;
 }

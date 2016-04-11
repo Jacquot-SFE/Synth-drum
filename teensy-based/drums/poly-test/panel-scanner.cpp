@@ -16,7 +16,8 @@ PanelScanner::PanelScanner()
 {
   for(uint32_t i = 0; i < NUM_PANELS; i++)
   {
-    led_buffer[i] = 0;
+    led_background_buffer[i] = 0;
+    led_overlay_buffer[i] = 0;
     old_buttons[i] = 0;
     new_buttons[i] = 0;
   }
@@ -44,9 +45,17 @@ void PanelScanner::tick()
   parseButtons();
 }
 
+void PanelScanner::clearAllLED()
+{
+  for(uint32_t i = 0; i < NUM_PANELS; i++)
+  {
+    led_background_buffer[i];
+    led_overlay_buffer[i];
+  }
+}
 
 
-void PanelScanner::setLED(uint32_t num)
+void PanelScanner::setBackgroundLED(uint32_t num)
 {
   uint32_t byte_idx, bit_num;
 
@@ -61,11 +70,11 @@ void PanelScanner::setLED(uint32_t num)
     byte_idx = NUM_PANELS - 1 -(num / 8);
     bit_num = num % 8;
 
-    led_buffer[byte_idx] |= 0x80 >> bit_num;
+    led_background_buffer[byte_idx] |= 0x80 >> bit_num;
   }
 }
 
-void PanelScanner::clearLED(uint32_t num)
+void PanelScanner::clearBackgroundLED(uint32_t num)
 {
   uint32_t byte_idx, bit_num;
 
@@ -76,7 +85,42 @@ void PanelScanner::clearLED(uint32_t num)
     byte_idx = NUM_PANELS - 1 -(num / 8);
     bit_num = num % 8;
 
-    led_buffer[byte_idx] &= ~(0x80 >> bit_num);
+    led_background_buffer[byte_idx] &= ~(0x80 >> bit_num);
+  }
+}
+
+
+void PanelScanner::setOverlayLED(uint32_t num)
+{
+  uint32_t byte_idx, bit_num;
+
+  // Funny math at play here.
+  // LEDs are out of order WRT the buttons...the first bit shifted in is the 
+  // last bit shifted out on the SPI ring.
+  // So we'll flop that around here by doing the shifting and indexing
+  // math from the top down, rather than bottom up.
+  
+  if(num < (NUM_PANELS*8))
+  {
+    byte_idx = NUM_PANELS - 1 -(num / 8);
+    bit_num = num % 8;
+
+    led_overlay_buffer[byte_idx] |= 0x80 >> bit_num;
+  }
+}
+
+void PanelScanner::clearOverlayLED(uint32_t num)
+{
+  uint32_t byte_idx, bit_num;
+
+  // see note above.
+  
+  if(num < (NUM_PANELS*8))
+  {
+    byte_idx = NUM_PANELS - 1 -(num / 8);
+    bit_num = num % 8;
+
+    led_overlay_buffer[byte_idx] &= ~(0x80 >> bit_num);
   }
 }
 
@@ -159,7 +203,7 @@ void PanelScanner::doTransaction()
   
   for(i = 0; i < NUM_PANELS; i++)
   {
-    trans_buffer[i] = led_buffer[i];
+    trans_buffer[i] = led_background_buffer[i] ^ led_overlay_buffer[i];
 //    Serial.println(trans_buffer[i], HEX);
   }
 

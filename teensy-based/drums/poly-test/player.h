@@ -21,6 +21,7 @@ private:
 
   bool     playing;
   uint32_t current_step;
+  uint32_t prev_step;
   uint32_t pause_len;
   uint32_t next_time;
   

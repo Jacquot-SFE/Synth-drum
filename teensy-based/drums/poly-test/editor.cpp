@@ -28,12 +28,11 @@ void Editor::receiveKey(uint32_t keynum, bool pressed)
       if(thePlayer.isPlaying())
       {
         thePlayer.stop();
-        theScanner.clearLED(0x17);
       }
       else
       {
         thePlayer.start();
-        theScanner.setLED(0x17);
+        theScanner.setOverlayLED(0x17);
       }
     }
   }
@@ -42,11 +41,11 @@ void Editor::receiveKey(uint32_t keynum, bool pressed)
   {
     if(pressed)
     {
-      theScanner.setLED(keynum);
+      theScanner.setBackgroundLED(keynum);
     }
     else
     {
-      theScanner.clearLED(keynum);
+      theScanner.clearBackgroundLED(keynum);
     }
   }
 #endif  
