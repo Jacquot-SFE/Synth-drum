@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include "editor-modes.h"
 #include "editor.h"
 #include "panel-scanner.h"
@@ -30,7 +32,6 @@ void pvEditorMode::HandlePlayButton(bool pressed)
     else
     {
       thePlayer.start();
-      //theScanner.setOverlayLED(0x17);
     }
   }
 }
@@ -48,6 +49,7 @@ StepEdit::StepEdit(): pvEditorMode()
 
 void StepEdit::HandleKey(uint32_t keynum, bool pressed)
 {
+  bool setting;
 
   if (keynum == 0x17) //start/stop key
   {
@@ -57,14 +59,8 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
   {
     if(pressed)
     {
-      if(thePattern.toggleBit(keynum))
-      {
-        theScanner.setBackgroundLED(keynum);
-      }
-      else
-      {
-        theScanner.clearBackgroundLED(keynum);
-      }
+      setting = thePattern.toggleBit(keynum);
+      theScanner.setBackgroundLED(keynum, setting);
     }
   }
   else if(keynum == 0x10) // voice select mode
@@ -92,14 +88,7 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
 #if 1
   else// other, unmapped keys, just show they work.
   {
-    if(pressed)
-    {
-      theScanner.setBackgroundLED(keynum);
-    }
-    else
-    {
-      theScanner.clearBackgroundLED(keynum);
-    }
+    theScanner.setBackgroundLED(keynum, pressed);
   }
 #endif    
   
@@ -107,19 +96,14 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
 
 void StepEdit::setLEDs(bool entry)
 {
+  bool setting;
+  
   // Initialize LEDs 
   if(entry)
   {
     for(uint32_t i = 0; i < Pattern::PATTERN_LEN; i++)
     {
-      if(thePattern.getVoiceBit(i))
-      {
-        theScanner.setBackgroundLED(i);
-      }
-      else
-      {
-        theScanner.clearBackgroundLED(i);
-      }
+      theScanner.setBackgroundLED(i, thePattern.getVoiceBit(i));
     }
   }
   else // on exit
@@ -171,8 +155,10 @@ void VoiceSelect::setLEDs(bool entry)
   
   if(entry)
   {
+    // Mode indication
     theScanner.setBackgroundLED(0x10);
-    
+
+    // Present voice indication
     bitnum = thePattern.getCurrentVoice();
     theScanner.setBackgroundLED(bitnum);
   }
@@ -194,6 +180,8 @@ MuteSelect::MuteSelect(): pvEditorMode()
 
 void MuteSelect::HandleKey(uint32_t keynum, bool pressed)
 {
+  bool setting;
+  
   if(keynum == 0x11) // voice select mode
   {
     if(pressed)
@@ -209,28 +197,15 @@ void MuteSelect::HandleKey(uint32_t keynum, bool pressed)
   {
     if(pressed)
     {
+      setting = thePlayer.toggleMuteBit(keynum);
+      
       if(thePlayer.isPlaying())
       {
-        if(thePlayer.toggleMuteBit(keynum))
-        {
-          theScanner.setBlinkingLED(keynum);
-        }
-        else
-        {
-          theScanner.clearBlinkingLED(keynum);
-        }
+        theScanner.setBlinkingLED(keynum, setting);
       }
       else
       {
-        if(thePlayer.toggleMuteBit(keynum))
-        {
-          theScanner.setBackgroundLED(keynum);
-        }
-        else
-        {
-          theScanner.clearBackgroundLED(keynum);
-        }
-        
+        theScanner.setBackgroundLED(keynum, setting);
       }
     }
   }
@@ -246,14 +221,16 @@ void MuteSelect::setLEDs(bool entry)
     // and siaplay data on editor buttons
     for(uint32_t i = 0; i < 8; i++)
     {
-      if(thePlayer.getMuteBit(i))
-      {
-        theScanner.setBackgroundLED(i);
-      }
-      else
-      {
-        theScanner.clearBackgroundLED(i);
-      }
+      theScanner.setBackgroundLED(i, thePlayer.getMuteBit(i));
+      
+//      if(thePlayer.getMuteBit(i))
+//      {
+//        theScanner.setBackgroundLED(i);
+//      }
+//      else
+//      {
+//        theScanner.clearBackgroundLED(i);
+//      }
     }
   }
   else

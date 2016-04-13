@@ -70,17 +70,18 @@ void PanelScanner::clearAllLED()
 }
 
 
-void PanelScanner::setBackgroundLED(uint32_t num)//, bool on)
+void PanelScanner::setBackgroundLED(uint32_t num, bool on)
 {
   uint32_t byte_idx, bit_num;
 
   Serial.print("set background: ");
   Serial.println(num);
 
-//  if(!on)
-//  {
-//    clearBackgroundLED(num);
-//  }
+  if(!on)
+  {
+    clearBackgroundLED(num);
+    return;
+  }
 
   // Funny math at play here.
   // LEDs are out of order WRT the buttons...the first bit shifted in is the 
@@ -121,12 +122,18 @@ void PanelScanner::clearAllBackgroundLEDs()
 }
 
 //////////////////////////////////////////////
-void PanelScanner::setBlinkingLED(uint32_t num)
+void PanelScanner::setBlinkingLED(uint32_t num, bool on)
 {
   uint32_t byte_idx, bit_num;
 
   Serial.print("set blinking: ");
   Serial.println(num);
+
+  if(!on)
+  {
+    clearBlinkingLED(num);
+    return;
+  }
 
   // Funny math at play here.
   // LEDs are out of order WRT the buttons...the first bit shifted in is the 

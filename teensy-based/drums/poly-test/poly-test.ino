@@ -419,7 +419,7 @@ void loop()
 
   if(now % 5000 == 0)
   {
-    theScanner.dumpLEDs();
+    //theScanner.dumpLEDs();
 
     
     Serial.print("Diagnostics: ");

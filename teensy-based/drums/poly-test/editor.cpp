@@ -15,8 +15,11 @@ static MuteSelect muteSelector;
 // constructor...
 Editor::Editor()
 {
+  // don't refer to other classes here, they may not yet be constructed/init'd
+  // IE: the pattern may not be constructed, to pull initial LED modes from.
+  // We'll call setMode from setup() to get it to register.
+  
   current_mode_p = &stepEditor;
-  current_mode_p->setLEDs(true);
 }
 
 void Editor::setMode(EditorMode newmode)

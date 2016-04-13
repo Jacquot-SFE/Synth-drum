@@ -18,11 +18,11 @@ public:
 
   void clearAllLED();
 
-  void setBackgroundLED(uint32_t num);//, bool on = true);
+  void setBackgroundLED(uint32_t num, bool on = true);
   void clearBackgroundLED(uint32_t num);
   void clearAllBackgroundLEDs();
   
-  void setBlinkingLED(uint32_t num);
+  void setBlinkingLED(uint32_t num, bool on = true);
   void clearBlinkingLED(uint32_t num);
   void clearAllBlinkingLEDs();
   
