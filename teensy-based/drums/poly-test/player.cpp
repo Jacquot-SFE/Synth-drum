@@ -4,6 +4,7 @@
 #include "player.h"
 #include "pattern.h"
 #include "panel-scanner.h"
+#include "editor.h"
 
 // TBD: clean this mess up
 // ugly way to get to the voices...
@@ -32,9 +33,9 @@ extern uint16_t t1, t2, t3;
 
 
 // Similar, for the pattern...
-extern Pattern thePattern;
+extern Pattern      thePattern;
 extern PanelScanner theScanner;
-
+extern Editor       theEditor;
 
 // constructor...
 Player::Player()
@@ -42,7 +43,8 @@ Player::Player()
   playing = false;
   current_step = 0;
 
-  mutes = 0;
+  active_mutes = 0;
+  pending_mutes = 0;
 
   pause_len = 125;// milliseconds, 125 mS = 120 bpm
 }
@@ -76,9 +78,18 @@ bool Player::toggleMuteBit(uint32_t bit)
   if(bit > 8)
     return false;
 
-  mutes ^= (1 << bit);
+  if(playing)
+  {
+    pending_mutes ^= (1 << bit);
 
-  return (mutes & (1 << bit));
+    return (pending_mutes & (1 << bit));
+  }
+  else
+  {
+    active_mutes ^= (1 << bit);
+
+    return (active_mutes & (1 << bit));
+  }
 }
  
 bool Player::getMuteBit(uint32_t bit)
@@ -86,7 +97,7 @@ bool Player::getMuteBit(uint32_t bit)
   if(bit > 8)
     return false;
 
-  return (mutes & (1 << bit));
+  return (active_mutes & (1 << bit));
 }
 
 
@@ -110,13 +121,13 @@ void Player::tick()
   uint8_t trigdata = thePattern.getStepData(current_step);
 
   // Apply mutes
-  trigdata &= (~mutes);
+  trigdata &= (~active_mutes);
 
   theScanner.clearOverlayLED(prev_step);
   theScanner.setOverlayLED(current_step);
   //theScanner.doTransaction();
 
-#if 1
+#if 0
   Serial.print("Trigger: step#");
   Serial.print(current_step);
   Serial.print(" bitmap:");
@@ -175,6 +186,17 @@ void Player::tick()
   // it's LED off
   prev_step = current_step; 
   current_step++;
-  current_step &= 0x0f;
+  if(current_step > 0x0f)
+  {
+    current_step = 0;
+    if(pending_mutes)
+    {
+      active_mutes ^= pending_mutes;
+      pending_mutes = 0;
+
+      theScanner.clearAllBlinkingLEDs();
+      theEditor.forceLEDs();
+    }
+  }
 }
 

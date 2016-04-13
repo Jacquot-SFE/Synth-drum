@@ -58,6 +58,10 @@ void Editor::receiveKey(uint32_t keynum, bool pressed)
 #endif
 
   current_mode_p->HandleKey(keynum, pressed);
+}
 
+void Editor::forceLEDs()
+{
+  current_mode_p->setLEDs(true);  
 }
 

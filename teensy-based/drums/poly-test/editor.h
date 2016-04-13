@@ -26,6 +26,7 @@ public:
 
   void receiveKey(uint32_t keynum, bool pressed);
   void setMode(EditorMode);
+  void forceLEDs();
   
 private:
 

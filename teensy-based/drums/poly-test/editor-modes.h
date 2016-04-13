@@ -15,6 +15,8 @@ class pvEditorMode
     virtual void HandleKey(uint32_t keynum, bool pressed) = 0;
     virtual void setLEDs(bool entry) = 0;
 
+    void HandlePlayButton(bool pressed);
+
   private:
 };
 

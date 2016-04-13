@@ -28,7 +28,8 @@ private:
   uint32_t pause_len;
   uint32_t next_time;
 
-  uint32_t mutes;
+  uint32_t active_mutes;
+  uint32_t pending_mutes;
 
 };
 

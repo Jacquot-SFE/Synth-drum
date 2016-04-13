@@ -359,6 +359,9 @@ void setup() {
   // put your setup code here, to run once:
 
   Serial.begin(115200);
+ 
+  delay(500);
+
   Serial.println("Setup");
 
   pinMode(15, INPUT); // Volume pot pin?
@@ -416,6 +419,9 @@ void loop()
 
   if(now % 5000 == 0)
   {
+    theScanner.dumpLEDs();
+
+    
     Serial.print("Diagnostics: ");
     Serial.print(" max, buffs: ");
     Serial.print(AudioProcessorUsageMax());
