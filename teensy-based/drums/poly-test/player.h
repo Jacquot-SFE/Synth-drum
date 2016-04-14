@@ -18,18 +18,24 @@ public:
   bool toggleMuteBit(uint32_t bit);
   bool getMuteBit(uint32_t bit);
 
+  bool setNextPattern(uint32_t next);
+  int32_t getActivePattern();
+
   void tick();
 
 private:
 
   bool     playing;
-  uint32_t current_step;
-  uint32_t prev_step;
-  uint32_t pause_len;
-  uint32_t next_time;
+  int32_t current_step;
+  int32_t prev_step;
+  int32_t pause_len;
+  int32_t next_time;
 
-  uint32_t active_mutes;
-  uint32_t pending_mutes;
+  int32_t active_mutes;
+  int32_t pending_mutes;
+
+  int32_t active_pattern;
+  int32_t pending_pattern;
 
 };
 

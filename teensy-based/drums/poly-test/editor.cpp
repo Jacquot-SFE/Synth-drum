@@ -11,6 +11,7 @@ extern Player       thePlayer;
 static StepEdit stepEditor;
 static VoiceSelect voiceSelector;
 static MuteSelect muteSelector;
+static PatternSelect patternSelector;
 
 // constructor...
 Editor::Editor()
@@ -37,6 +38,13 @@ void Editor::setMode(EditorMode newmode)
     {
       current_mode_p->setLEDs(false);
       current_mode_p = &muteSelector;
+      current_mode_p->setLEDs(true);
+      break;
+    }
+  case eMODE_PATT_SEL:
+    {
+      current_mode_p->setLEDs(false);
+      current_mode_p = &patternSelector;
       current_mode_p->setLEDs(true);
       break;
     }

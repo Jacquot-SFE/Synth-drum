@@ -48,12 +48,17 @@ static const uint32_t sequence[Pattern::PATTERN_LEN] =
 // constructor...
 Pattern::Pattern()
 {
+
   for(uint32_t i = 0; i < PATTERN_LEN; i++)
   {
-    pattern_data[i] = sequence[i];
+    for(uint32_t j = 0; j < NUM_PATTERNS; j++)
+    {
+      pattern_data[j][i] = sequence[i];
+    }
   }
 
   setCurrentVoice(0);
+  setCurrentPattern(0);
 
 }
 
@@ -65,9 +70,9 @@ bool Pattern::toggleBit(uint32_t index)
     index %= PATTERN_LEN; 
   }
 
-  pattern_data[index] ^= current_voice_mask;
+  pattern_data[current_pattern][index] ^= current_voice_mask;
 
-  return(pattern_data[index] & current_voice_mask);
+  return(pattern_data[current_pattern][index] & current_voice_mask);
   
 }
 
@@ -81,7 +86,7 @@ uint32_t Pattern::getStepData(uint32_t index)
     index %= PATTERN_LEN; 
   }
   
-  return pattern_data[index];
+  return pattern_data[current_pattern][index];
 }
 
 // Get all of the column data for a particular voice
@@ -93,7 +98,7 @@ bool Pattern::getVoiceBit(uint32_t step)
     step %= PATTERN_LEN; 
   }
   
-  return (pattern_data[step] & current_voice_mask);
+  return (pattern_data[current_pattern][step] & current_voice_mask);
 }
 
 void Pattern::setCurrentVoice(uint32_t num)
@@ -107,4 +112,16 @@ uint32_t Pattern::getCurrentVoice(void)
   return current_voice;
 }
 
+void Pattern::setCurrentPattern(uint32_t nextpatt)
+{
+  if(nextpatt < NUM_PATTERNS)
+  {
+    current_pattern = nextpatt;
+  }
+}
+
+uint32_t Pattern::getCurrentPattern()
+{
+  return current_pattern;
+}
 

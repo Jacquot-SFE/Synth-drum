@@ -291,11 +291,11 @@ void paramUpdate1()
   snare.frequency(80 + (snpitch >> 2));
   snaremix.gain(0, 1.0 - mix);
   snaremix.gain(1, mix);
-  snare.length(snlen + 10);
+  snare.length((snlen/2) + 10);
 #endif
 #ifdef HAT
-  openlen = ohdec + 10;
-  closedlen = chdec + 10;
+  openlen = (ohdec/2) + 10;
+  closedlen = (chdec/2) + 10;
 #endif  
 }
 #if 1
@@ -351,8 +351,6 @@ void paramUpdate3()
   //pause = tempo + 75;
   thePlayer.setPause(tempo+75);
 }
-
-
 
 
 void setup() {

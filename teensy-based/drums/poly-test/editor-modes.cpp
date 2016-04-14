@@ -74,11 +74,22 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
       theEditor.setMode(Editor::eMODE_STEP_EDIT);
     }
   }
-  else if(keynum == 0x11) // voice select mode
+  else if(keynum == 0x11) // voice mute select 
   {
     if(pressed)
     {
       theEditor.setMode(Editor::eMODE_MUTE_SEL);
+    }
+    else
+    {
+      theEditor.setMode(Editor::eMODE_STEP_EDIT);
+    }
+  }
+  else if(keynum == 0x12) // pattern select mode
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_PATT_SEL);
     }
     else
     {
@@ -96,8 +107,6 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
 
 void StepEdit::setLEDs(bool entry)
 {
-  bool setting;
-  
   // Initialize LEDs 
   if(entry)
   {
@@ -222,15 +231,6 @@ void MuteSelect::setLEDs(bool entry)
     for(uint32_t i = 0; i < 8; i++)
     {
       theScanner.setBackgroundLED(i, thePlayer.getMuteBit(i));
-      
-//      if(thePlayer.getMuteBit(i))
-//      {
-//        theScanner.setBackgroundLED(i);
-//      }
-//      else
-//      {
-//        theScanner.clearBackgroundLED(i);
-//      }
     }
   }
   else
@@ -239,4 +239,66 @@ void MuteSelect::setLEDs(bool entry)
     theScanner.clearAllBlinkingLEDs();
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
+//////// Pattern Selector
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+PatternSelect::PatternSelect()
+{
+  
+}
+  
+void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
+{
+  if(keynum == 0x12) //exit pattern select - to step edit
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_STEP_EDIT);
+    }
+  }
+  else if (keynum == 0x17) //start/stop key
+  {
+    HandlePlayButton(pressed);
+  }
+  else if((keynum >= 0) && (keynum <= 15))
+  {
+    if(pressed)
+    {
+      if(thePlayer.isPlaying())
+      {
+          // returns true if next pattern is different
+          if(thePlayer.setNextPattern(keynum))
+          {
+            theScanner.setBlinkingLED(keynum);
+          }
+      }
+      else
+      {
+        theScanner.clearBackgroundLED(thePlayer.getActivePattern());
+        thePlayer.setNextPattern(keynum);
+        theScanner.setBackgroundLED(keynum);
+      }
+    }
+  }
+}
+
+void PatternSelect::setLEDs(bool entry)
+{
+  if(entry)
+  {
+    // set mode indicator
+    theScanner.setBackgroundLED(0x12);
+    theScanner.setBackgroundLED(thePattern.getCurrentPattern());
+  }
+  else
+  {
+    theScanner.clearAllBackgroundLEDs();
+    theScanner.clearAllBlinkingLEDs();
+  }
+
+}
+
 

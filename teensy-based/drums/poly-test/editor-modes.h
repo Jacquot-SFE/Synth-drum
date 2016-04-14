@@ -54,5 +54,16 @@ class MuteSelect: public pvEditorMode
   private:
 };
 
+class PatternSelect: public pvEditorMode
+{
+  public:
+
+    PatternSelect();
+    virtual void HandleKey(uint32_t keynum, bool pressed);
+    virtual void setLEDs(bool entry);
+
+  private:
+};
+
 
 #endif // keepout

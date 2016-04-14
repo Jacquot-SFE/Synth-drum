@@ -46,6 +46,9 @@ Player::Player()
   active_mutes = 0;
   pending_mutes = 0;
 
+  active_pattern = 0;
+  pending_pattern = -1;
+
   pause_len = 125;// milliseconds, 125 mS = 120 bpm
 }
 
@@ -98,6 +101,36 @@ bool Player::getMuteBit(uint32_t bit)
     return false;
 
   return (active_mutes & (1 << bit));
+}
+
+bool Player::setNextPattern(uint32_t next)
+{
+  if(next > Pattern::NUM_PATTERNS)
+    return false;
+
+  if(next == active_pattern)
+  {
+    return false;
+  }
+
+  if(playing)
+  {
+    pending_pattern = next;
+
+    return true;// (pending_pattern);
+  }
+  else
+  {
+    active_pattern = next;
+    thePattern.setCurrentPattern(active_pattern);
+
+    return true;  //(active_mutes & (1 << bit));
+  }
+}
+
+int32_t Player::getActivePattern()
+{
+  return active_pattern;
 }
 
 
@@ -195,6 +228,17 @@ void Player::tick()
       pending_mutes = 0;
 
       theScanner.clearAllBlinkingLEDs();
+      theEditor.forceLEDs();
+    }
+
+    if(pending_pattern != -1)
+    {
+      active_pattern = pending_pattern;
+      thePattern.setCurrentPattern(pending_pattern);
+      pending_pattern = -1;
+
+      theScanner.clearAllBlinkingLEDs();
+      theScanner.clearAllBackgroundLEDs();
       theEditor.forceLEDs();
     }
   }
