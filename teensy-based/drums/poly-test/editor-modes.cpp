@@ -11,6 +11,14 @@ extern Player       thePlayer;
 extern Pattern      thePattern;
 extern Editor       theEditor;
 
+// Local definitions
+
+static const int32_t PATTERN_SEL_INDICATOR = 0x10;
+static const int32_t STEP_EDIT_INDICATOR = 0x11;
+static const int32_t VOICE_SEL_INDICATOR = 0x12;
+static const int32_t MUTE_SEL_INDICATOR = 0x13;
+static const int32_t PLAY_INDICATOR = 0x17;
+
 ///////////////////////////////////////////////////////////////////////////////////////
 //////// Base Class
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +59,7 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
 {
   bool setting;
 
-  if (keynum == 0x17) //start/stop key
+  if (keynum == PLAY_INDICATOR) //start/stop key
   {
     HandlePlayButton(pressed);
   }
@@ -63,40 +71,28 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
       theScanner.setBackgroundLED(keynum, setting);
     }
   }
-  else if(keynum == 0x10) // voice select mode
+  else if(keynum == VOICE_SEL_INDICATOR) // voice select mode
   {
     if(pressed)
     {
       theEditor.setMode(Editor::eMODE_VOICE_SEL);
     }
-    else
-    {
-      theEditor.setMode(Editor::eMODE_STEP_EDIT);
-    }
   }
-  else if(keynum == 0x11) // voice mute select 
+  else if(keynum == MUTE_SEL_INDICATOR)
   {
     if(pressed)
     {
       theEditor.setMode(Editor::eMODE_MUTE_SEL);
     }
-    else
-    {
-      theEditor.setMode(Editor::eMODE_STEP_EDIT);
-    }
   }
-  else if(keynum == 0x12) // pattern select mode
+  else if(keynum == PATTERN_SEL_INDICATOR) // pattern select mode
   {
     if(pressed)
     {
       theEditor.setMode(Editor::eMODE_PATT_SEL);
     }
-    else
-    {
-      theEditor.setMode(Editor::eMODE_STEP_EDIT);
-    }
   }
-#if 1
+#if 0
   else// other, unmapped keys, just show they work.
   {
     theScanner.setBackgroundLED(keynum, pressed);
@@ -110,9 +106,14 @@ void StepEdit::setLEDs(bool entry)
   // Initialize LEDs 
   if(entry)
   {
+    theScanner.setBackgroundLED(STEP_EDIT_INDICATOR);
+    
     for(uint32_t i = 0; i < Pattern::PATTERN_LEN; i++)
     {
-      theScanner.setBackgroundLED(i, thePattern.getVoiceBit(i));
+      if(thePattern.getVoiceBit(i))
+      {
+        theScanner.setBackgroundLED(i);
+      }
     }
   }
   else // on exit
@@ -135,14 +136,14 @@ VoiceSelect::VoiceSelect(): pvEditorMode()
 
 void VoiceSelect::HandleKey(uint32_t keynum, bool pressed)
 {
-  if(keynum == 0x10) // voice select mode
+  if(keynum == VOICE_SEL_INDICATOR) // voice select mode
   {
     if(!pressed)
     {
       theEditor.setMode(Editor::eMODE_STEP_EDIT);
     }
   }
-  else if (keynum == 0x17) //start/stop key
+  else if (keynum == PLAY_INDICATOR) //start/stop key
   {
     HandlePlayButton(pressed);
   }
@@ -165,7 +166,7 @@ void VoiceSelect::setLEDs(bool entry)
   if(entry)
   {
     // Mode indication
-    theScanner.setBackgroundLED(0x10);
+    theScanner.setBackgroundLED(VOICE_SEL_INDICATOR);
 
     // Present voice indication
     bitnum = thePattern.getCurrentVoice();
@@ -191,14 +192,21 @@ void MuteSelect::HandleKey(uint32_t keynum, bool pressed)
 {
   bool setting;
   
-  if(keynum == 0x11) // voice select mode
+  if(keynum == STEP_EDIT_INDICATOR) // voice select mode
   {
     if(pressed)
     {
       theEditor.setMode(Editor::eMODE_STEP_EDIT);
     }
   }
-  else if (keynum == 0x17) //start/stop key
+  else if(keynum == PATTERN_SEL_INDICATOR) // pattern select mode
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_PATT_SEL);
+    }
+  }
+  else if (keynum == PLAY_INDICATOR) //start/stop key
   {
     HandlePlayButton(pressed);
   }
@@ -225,7 +233,7 @@ void MuteSelect::setLEDs(bool entry)
   if(entry)
   {
     // set mode indicator
-    theScanner.setBackgroundLED(0x11);
+    theScanner.setBackgroundLED(MUTE_SEL_INDICATOR);
 
     // and siaplay data on editor buttons
     for(uint32_t i = 0; i < 8; i++)
@@ -252,14 +260,21 @@ PatternSelect::PatternSelect()
   
 void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
 {
-  if(keynum == 0x12) //exit pattern select - to step edit
+  if(keynum == STEP_EDIT_INDICATOR)
   {
     if(pressed)
     {
       theEditor.setMode(Editor::eMODE_STEP_EDIT);
     }
   }
-  else if (keynum == 0x17) //start/stop key
+  else if(keynum == MUTE_SEL_INDICATOR)
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_MUTE_SEL);
+    }
+  }
+  else if (keynum == PLAY_INDICATOR) //start/stop key
   {
     HandlePlayButton(pressed);
   }
@@ -290,7 +305,7 @@ void PatternSelect::setLEDs(bool entry)
   if(entry)
   {
     // set mode indicator
-    theScanner.setBackgroundLED(0x12);
+    theScanner.setBackgroundLED(PATTERN_SEL_INDICATOR);
     theScanner.setBackgroundLED(thePattern.getCurrentPattern());
   }
   else
