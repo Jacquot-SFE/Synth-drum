@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 
-// fwd decl for other headers
 class pvEditorMode
 {
   public:
@@ -65,5 +64,17 @@ class PatternSelect: public pvEditorMode
   private:
 };
 
+class UtilityMode: public pvEditorMode
+{
+  public:
+
+    UtilityMode();
+    virtual void HandleKey(uint32_t keynum, bool pressed);
+    virtual void setLEDs(bool entry);
+
+  private:
+
+    void doUtilMode(uint32_t keynum, bool pressed);
+};
 
 #endif // keepout

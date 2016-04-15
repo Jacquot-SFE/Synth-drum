@@ -12,6 +12,7 @@ static StepEdit stepEditor;
 static VoiceSelect voiceSelector;
 static MuteSelect muteSelector;
 static PatternSelect patternSelector;
+static UtilityMode utilityMode;
 
 // constructor...
 Editor::Editor()
@@ -48,6 +49,14 @@ void Editor::setMode(EditorMode newmode)
       current_mode_p->setLEDs(true);
       break;
     }
+  case eMODE_UTILITY:
+    {
+      current_mode_p->setLEDs(false);
+      current_mode_p = &utilityMode;
+      current_mode_p->setLEDs(true);
+      break;
+    }
+
   default:
     {
       current_mode_p->setLEDs(false);
@@ -61,7 +70,7 @@ void Editor::setMode(EditorMode newmode)
 
 void Editor::receiveKey(uint32_t keynum, bool pressed)
 {
-#if 1
+#if 0
   Serial.print("Ed Key: ");
   Serial.print(keynum, HEX);
   Serial.print(" ");

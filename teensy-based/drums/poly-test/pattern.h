@@ -22,6 +22,9 @@ public:
   void     setCurrentPattern(uint32_t);
   uint32_t getCurrentPattern();
 
+  void     clearCurrentPattern();
+  void     randomizeCurrentPattern();
+
   uint32_t getStepData(uint32_t index);
   bool     getVoiceBit(uint32_t step);
 private:

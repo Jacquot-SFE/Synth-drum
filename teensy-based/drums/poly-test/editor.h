@@ -20,7 +20,8 @@ public:
     eMODE_STEP_EDIT = 0,
     eMODE_VOICE_SEL,
     eMODE_MUTE_SEL,
-    eMODE_PATT_SEL
+    eMODE_PATT_SEL,
+    eMODE_UTILITY
   };
 
   Editor();

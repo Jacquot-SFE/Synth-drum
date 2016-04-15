@@ -17,6 +17,7 @@ static const int32_t PATTERN_SEL_INDICATOR = 0x10;
 static const int32_t STEP_EDIT_INDICATOR = 0x11;
 static const int32_t VOICE_SEL_INDICATOR = 0x12;
 static const int32_t MUTE_SEL_INDICATOR = 0x13;
+static const int32_t UTILITY_SEL_INDICATOR = 0x14;
 static const int32_t PLAY_INDICATOR = 0x17;
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +93,14 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
       theEditor.setMode(Editor::eMODE_PATT_SEL);
     }
   }
+  else if(keynum == UTILITY_SEL_INDICATOR)
+  {
+    if(pressed)// && (!thePlayer.isPlaying()))
+    {
+      theEditor.setMode(Editor::eMODE_UTILITY);
+    }
+  }
+
 #if 0
   else// other, unmapped keys, just show they work.
   {
@@ -210,6 +219,14 @@ void MuteSelect::HandleKey(uint32_t keynum, bool pressed)
   {
     HandlePlayButton(pressed);
   }
+  else if(keynum == UTILITY_SEL_INDICATOR)
+  {
+    if(pressed)// && (!thePlayer.isPlaying()))
+    {
+      theEditor.setMode(Editor::eMODE_UTILITY);
+    }
+  }
+
   else if((keynum >= 0) && (keynum <= 7))
   {
     if(pressed)
@@ -274,6 +291,13 @@ void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
       theEditor.setMode(Editor::eMODE_MUTE_SEL);
     }
   }
+  else if(keynum == UTILITY_SEL_INDICATOR)
+  {
+    if(pressed)// && (!thePlayer.isPlaying()))
+    {
+      theEditor.setMode(Editor::eMODE_UTILITY);
+    }
+  }
   else if (keynum == PLAY_INDICATOR) //start/stop key
   {
     HandlePlayButton(pressed);
@@ -314,6 +338,105 @@ void PatternSelect::setLEDs(bool entry)
     theScanner.clearAllBlinkingLEDs();
   }
 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+//////// Utility mode
+///////////////////////////////////////////////////////////////////////////////////////
+
+UtilityMode::UtilityMode(): pvEditorMode()
+{
+  
+}
+
+void UtilityMode::HandleKey(uint32_t keynum, bool pressed)
+{
+  if(keynum == STEP_EDIT_INDICATOR) // voice select mode
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_STEP_EDIT);
+    }
+  }
+  else if(keynum == MUTE_SEL_INDICATOR)
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_MUTE_SEL);
+    }
+  }
+  else if(keynum == PATTERN_SEL_INDICATOR) // pattern select mode
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_PATT_SEL);
+    }
+  }
+  else if (keynum == PLAY_INDICATOR) //start/stop key
+  {
+    HandlePlayButton(pressed);
+  }
+  else if((keynum >= 0) && (keynum <= 15))
+  {
+    doUtilMode(keynum, pressed);
+    
+  }
+}
+
+void UtilityMode::setLEDs(bool entry)
+{
+  //uint32_t bitnum;
+  
+  if(entry)
+  {
+    // Mode indication
+    theScanner.setBackgroundLED(UTILITY_SEL_INDICATOR);
+
+    // Present data indication
+    theScanner.setBackgroundLED(0x2, thePlayer.getSwing());
+  }
+  else
+  {
+    theScanner.clearAllBackgroundLEDs();
+  }
+}
+
+void UtilityMode::doUtilMode(uint32_t keynum, bool pressed)
+{
+  bool playing = thePlayer.isPlaying();
+  
+  if(!pressed)
+  {
+    return;
+  }
+  
+  switch(keynum)
+  {
+    case 0:
+    {
+      if(!playing)
+      {
+        thePattern.clearCurrentPattern();
+      }
+    }
+    break;
+    case 1:
+    {
+      if(!playing)
+      {
+        thePattern.randomizeCurrentPattern();
+      }
+    }
+    break;
+    case 2:
+    {
+      
+      theScanner.setBackgroundLED(2, thePlayer.toggleSwing());
+    }
+    break;
+
+    
+  }
 }
 
 

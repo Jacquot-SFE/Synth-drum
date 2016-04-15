@@ -15,6 +15,9 @@ public:
 
   void setPause(uint32_t millisec);
 
+  bool toggleSwing();
+  bool getSwing();
+
   bool toggleMuteBit(uint32_t bit);
   bool getMuteBit(uint32_t bit);
 
@@ -25,7 +28,8 @@ public:
 
 private:
 
-  bool     playing;
+  bool    playing;
+  bool    swing;
   int32_t current_step;
   int32_t prev_step;
   int32_t pause_len;

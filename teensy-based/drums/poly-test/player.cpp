@@ -41,6 +41,7 @@ extern Editor       theEditor;
 Player::Player()
 {
   playing = false;
+  swing   = false;
   current_step = 0;
 
   active_mutes = 0;
@@ -74,6 +75,21 @@ bool Player::isPlaying()
 void Player::setPause(uint32_t millisec)
 {
   pause_len = millisec;
+}
+
+bool Player::toggleSwing()
+{
+  swing = !swing;
+
+  Serial.print("Swing is now: ");
+  Serial.println(swing);
+
+  return swing;
+}
+
+bool Player::getSwing()
+{
+  return swing;
 }
 
 bool Player::toggleMuteBit(uint32_t bit)
@@ -148,7 +164,21 @@ void Player::tick()
     return;
   }
 
-  next_time = now + pause_len;
+  if(!swing)
+  {
+    next_time = now + pause_len;
+  }
+  else
+  {
+    if(!(current_step & 0x01))
+    {
+      next_time = now + pause_len + (pause_len/3);
+    }
+    else
+    {
+      next_time = now + ((2*pause_len)/3);
+    }
+  }
    
   //
   uint8_t trigdata = thePattern.getStepData(current_step);

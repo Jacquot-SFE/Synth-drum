@@ -125,3 +125,19 @@ uint32_t Pattern::getCurrentPattern()
   return current_pattern;
 }
 
+void     Pattern::clearCurrentPattern()
+{
+  for(uint32_t i = 0; i < PATTERN_LEN; i++)
+  {
+    pattern_data[current_pattern][i] = 0;
+  }
+}
+
+void     Pattern::randomizeCurrentPattern()
+{
+  for(uint32_t i = 0; i < PATTERN_LEN; i++)
+  {
+    pattern_data[current_pattern][i] = random(0x0ff) & random(0x0ff) ;
+  }
+}
+
