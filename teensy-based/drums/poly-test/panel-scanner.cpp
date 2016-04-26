@@ -25,26 +25,20 @@ PanelScanner::PanelScanner()
 
   tick_counter = 0;
   blink_phase = false;
-
 }
 
 void PanelScanner::initScanning()
 {
-  SPI.setSCK(14);
-  SPI.setMOSI(7);
+//  SPI is shared with SD card, initialized in setup()
+//  SPI.setSCK(14);
+//  SPI.setMOSI(7);
+//  SPI.begin();
   
   pinMode(CHIPSEL_BTNS, OUTPUT);
   digitalWrite(CHIPSEL_BTNS, LOW);
   pinMode(CHIPSEL_LEDS, OUTPUT);
   digitalWrite(CHIPSEL_LEDS, LOW);
 
-  SPI.begin();
-
-  // Apparently the first scan returns junk?
-  doTransaction();
-  doTransaction();
-  doTransaction();
-  doTransaction();
 }
 
 void PanelScanner::tick()
@@ -276,6 +270,8 @@ void PanelScanner::doTransaction()
 
   SPI.beginTransaction(registersettings);
 
+  digitalWrite(CHIPSEL_BTNS, HIGH);
+
   SPI.transfer(trans_buffer, NUM_PANELS);
 
   digitalWrite(CHIPSEL_LEDS, HIGH);
@@ -284,7 +280,6 @@ void PanelScanner::doTransaction()
 
   SPI.endTransaction();
 
-  digitalWrite(CHIPSEL_BTNS, HIGH);
 
   for(i = 0; i < NUM_PANELS; i++)
   {
