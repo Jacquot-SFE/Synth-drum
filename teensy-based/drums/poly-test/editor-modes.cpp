@@ -430,11 +430,33 @@ void UtilityMode::doUtilMode(uint32_t keynum, bool pressed)
     break;
     case 2:
     {
-      
       theScanner.setBackgroundLED(2, thePlayer.toggleSwing());
     }
     break;
+    case 14:
+    {
+      if(!playing)
+      {
+        delay(100);
+        
+        thePattern.writeToCard();
 
+        delay(100);
+      }
+    }
+    break;
+    case 15:
+    {
+      if(!playing)
+      {
+        delay(100);
+
+        thePattern.readFromCard();
+
+        delay(100);
+      }
+    }
+    break;
     
   }
 }

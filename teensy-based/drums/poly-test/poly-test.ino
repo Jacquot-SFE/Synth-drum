@@ -126,77 +126,6 @@ Player       thePlayer;
 uint16_t openlen, closedlen;
 uint16_t t1, t2, t3;
 
-#if 0
-void trigger()
-{
-  static uint32_t index = 0;
-  uint8_t step;
-
-  step = thePattern.getStepData(index);// sequence[index];
-
-  //theScanner.setLED(index);
-  //theScanner.doTransaction();
-
-#if 0
-  Serial.print("Trigger: step#");
-  Serial.print(index);
-  Serial.print(" bitmap:");
-  Serial.println(step, HEX);
-#endif
-
-  AudioNoInterrupts();
-
-#ifdef KICK
-  if (step & 0x01)
-    kick.noteOn();
-#endif    
-#ifdef SNARE
-  if (step & 0x02)
-    snare.noteOn();
-#endif
-#ifdef HAT
-  if (step & 0x04)
-  {
-    hatdecay.length(closedlen);
-    hatdecay.noteOn();
-  }
-  else if (step & 0x08)
-  {
-    hatdecay.length(openlen);
-    hatdecay.noteOn();
-  }
-#endif
-#ifdef TOM  
-  if (step & 0x10)
-  {
-    tom.frequency(t1);
-    tom.noteOn();
-  }
-  else if (step & 0x20)
-  {
-    tom.frequency(t2);
-    tom.noteOn();
-  }
-  else if (step & 0x40)
-  {
-    tom.frequency(t3);
-    tom.noteOn();
-  }
-#endif
-#ifdef SHAKER  
-  if (step & 0x80)
-  {
-    //shakedecay.noteOn();
-    belldecay.noteOn();
-  }
-#endif
-  AudioInterrupts();
-  theScanner.clearLED(index);
-  index++;
-  index &= 0x0f;
-}
-#endif
-
 void paramInit()
 {
   // common to severl instruments
@@ -358,13 +287,49 @@ void setup() {
 
   Serial.begin(115200);
  
-  delay(500);
+  delay(1500);
 
   Serial.println("Setup");
 
   pinMode(15, INPUT); // Volume pot pin?
 
+  // SD CARD & general SPI inits
+  // Initialize the SD card
+  SPI.setMOSI(7);
+  SPI.setSCK(14);
+
+  // This sets the chip selects for the panel
+  // to OFF.  Gotta do it before SD init, else the panels contend!
   theScanner.initScanning();
+
+  
+  if (!(SD.begin(10))) 
+  {
+    Serial.println("Unable to access the SD card");
+  }
+  else
+  {
+    Serial.println("SD card begin worked");    
+  }
+
+  if(SD.exists("test.txt"))
+  {
+    Serial.println("found test.txt file");
+  }
+  else
+  {
+    Serial.println("Didn't find test file?");
+  }
+
+  if(SD.exists("TEST.TXT"))
+  {
+    Serial.println("found TEST.TXT file");
+  }
+  else
+  {
+    Serial.println("Didn't find TEST file?");
+  }
+
   //theScanner.doTransaction();
 
   theEditor.setMode(Editor::eMODE_PATT_SEL);
@@ -383,6 +348,7 @@ void setup() {
 
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
+  sgtl5000_1.lineOutLevel(16);
 
   paramInit();
 

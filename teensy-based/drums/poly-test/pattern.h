@@ -27,6 +27,10 @@ public:
 
   uint32_t getStepData(uint32_t index);
   bool     getVoiceBit(uint32_t step);
+
+  bool     writeToCard();
+  bool     readFromCard();
+  
 private:
 
   uint32_t pattern_data[NUM_PATTERNS][PATTERN_LEN];
