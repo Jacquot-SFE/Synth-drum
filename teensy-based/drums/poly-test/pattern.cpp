@@ -54,6 +54,10 @@ static const uint8_t SD_CHIPSEL = 10;
 Pattern::Pattern()
 {
 
+  // Only init internal data - 
+  // adding dependencies on other items at this point is tricky, if we aren't really careful 
+  // about order of construction.
+
   for(uint32_t i = 0; i < PATTERN_LEN; i++)
   {
     for(uint32_t j = 0; j < NUM_PATTERNS; j++)

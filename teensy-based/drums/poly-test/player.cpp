@@ -1,10 +1,11 @@
 #include <Arduino.h>
-//#include <>
 
 #include "player.h"
 #include "pattern.h"
 #include "panel-scanner.h"
 #include "editor.h"
+
+#include "voice.h"
 
 // TBD: clean this mess up
 // ugly way to get to the voices...
@@ -13,24 +14,7 @@
 #include "Synth-Decay.h"
 #include "Synth-DrumHeart.h"
 
-extern AudioSynthSimpleDrum kick;
-extern AudioSynthDrumHeart  snare;
-extern AudioSynthSimpleDrum tom;
-extern AudioSynthDecay      shakedecay;
-extern AudioSynthDecay      hatdecay;
-extern AudioSynthDecay      belldecay;
-
-extern uint16_t openlen, closedlen;
-extern uint16_t t1, t2, t3;
-
-
-#define HAT
-#define KICK
-#define SNARE
-#define TOM
-#define SHAKER
-#define BELL
-
+#include "voice.h"
 
 // Similar, for the pattern...
 extern Pattern      thePattern;
@@ -181,7 +165,7 @@ void Player::tick()
   }
    
   //
-  uint8_t trigdata = thePattern.getStepData(current_step);
+  uint32_t trigdata = thePattern.getStepData(current_step);
 
   // Apply mutes
   trigdata &= (~active_mutes);
@@ -199,50 +183,43 @@ void Player::tick()
 
   AudioNoInterrupts();
 
-#ifdef KICK
   if (trigdata & 0x01)
-    kick.noteOn();
-#endif    
-#ifdef SNARE
+  {
+    triggerKick();
+  }
   if (trigdata & 0x02)
-    snare.noteOn();
-#endif
-#ifdef HAT
+  {
+    triggerSnare();
+  }
   if (trigdata & 0x04)
   {
-    hatdecay.length(closedlen);
-    hatdecay.noteOn();
+    triggerHat(false);
   }
   else if (trigdata & 0x08)
   {
-    hatdecay.length(openlen);
-    hatdecay.noteOn();
+    triggerHat(true);  
   }
-#endif
-#ifdef TOM  
   if (trigdata & 0x10)
   {
-    tom.frequency(t1);
-    tom.noteOn();
+    triggerTom(1);
   }
   else if (trigdata & 0x20)
   {
-    tom.frequency(t2);
-    tom.noteOn();
-  }
+    triggerTom(2);
+  } 
   else if (trigdata & 0x40)
   {
-    tom.frequency(t3);
-    tom.noteOn();
+    triggerTom(3);
   }
-#endif
-#ifdef SHAKER  
   if (trigdata & 0x80)
   {
-    //shakedecay.noteOn();
-    belldecay.noteOn();
+    triggerBell();
   }
-#endif
+  if (trigdata & 0x100)
+  {
+    triggerShaker();
+  }
+
   AudioInterrupts();
 
   // Keep track of previous step so we can turn
