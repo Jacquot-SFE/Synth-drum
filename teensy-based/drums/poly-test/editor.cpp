@@ -9,6 +9,7 @@ extern Player       thePlayer;
 
 // decls for the mode objects
 static StepEdit stepEditor;
+static ChainEdit chainEditor;
 static VoiceSelect voiceSelector;
 static MuteSelect muteSelector;
 static PatternSelect patternSelector;
@@ -53,6 +54,13 @@ void Editor::setMode(EditorMode newmode)
     {
       current_mode_p->setLEDs(false);
       current_mode_p = &utilityMode;
+      current_mode_p->setLEDs(true);
+      break;
+    }
+  case eMODE_CHAIN_EDIT:
+    {
+      current_mode_p->setLEDs(false);
+      current_mode_p = &chainEditor;
       current_mode_p->setLEDs(true);
       break;
     }

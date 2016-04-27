@@ -68,8 +68,12 @@ void PanelScanner::setBackgroundLED(uint32_t num, bool on)
 {
   uint32_t byte_idx, bit_num;
 
+#if 0
   Serial.print("set background: ");
-  Serial.println(num);
+  Serial.print(num);
+  Serial.print(" ");
+  Serial.println(on);
+#endif
 
   if(!on)
   {

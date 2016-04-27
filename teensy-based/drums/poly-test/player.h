@@ -21,10 +21,16 @@ public:
   bool toggleMuteBit(uint32_t bit);
   bool getMuteBit(uint32_t bit);
 
-  bool setNextPattern(uint32_t next);
+  bool setNextPattern(int32_t next);
   int32_t getActivePattern();
 
   void tick();
+
+  static const uint32_t CHAIN_LEN = 32;
+
+  void    addToChain(int32_t patt_num);
+  int32_t getNextChainVal();
+  bool    checkChainMembership(int32_t patt);
 
 private:
 
@@ -40,6 +46,12 @@ private:
 
   int32_t active_pattern;
   int32_t pending_pattern;
+
+  bool    chain_active;
+  int32_t chain_len;
+  int32_t chain_insert_idx;
+  int32_t chain_play_idx;
+  int8_t  chain_array[CHAIN_LEN];
 
 };
 

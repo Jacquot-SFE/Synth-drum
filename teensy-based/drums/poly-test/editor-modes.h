@@ -64,6 +64,19 @@ class PatternSelect: public pvEditorMode
   private:
 };
 
+class ChainEdit: public pvEditorMode
+{
+  public:
+
+    ChainEdit();
+    virtual void HandleKey(uint32_t keynum, bool pressed);
+    virtual void setLEDs(bool entry);
+
+  private:
+};
+
+
+
 class UtilityMode: public pvEditorMode
 {
   public:

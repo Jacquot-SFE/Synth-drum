@@ -14,10 +14,11 @@ extern Editor       theEditor;
 // Local definitions
 
 static const int32_t PATTERN_SEL_INDICATOR = 0x10;
-static const int32_t STEP_EDIT_INDICATOR = 0x11;
-static const int32_t VOICE_SEL_INDICATOR = 0x12;
-static const int32_t MUTE_SEL_INDICATOR = 0x13;
-static const int32_t UTILITY_SEL_INDICATOR = 0x14;
+static const int32_t PATTERN_CHAIN_INDICATOR = 0x11;
+static const int32_t STEP_EDIT_INDICATOR = 0x12;
+static const int32_t VOICE_SEL_INDICATOR = 0x13;
+static const int32_t MUTE_SEL_INDICATOR = 0x14;
+static const int32_t UTILITY_SEL_INDICATOR = 0x15;
 static const int32_t PLAY_INDICATOR = 0x17;
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -293,9 +294,16 @@ void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
   }
   else if(keynum == UTILITY_SEL_INDICATOR)
   {
-    if(pressed)// && (!thePlayer.isPlaying()))
+    if(pressed)
     {
       theEditor.setMode(Editor::eMODE_UTILITY);
+    }
+  }
+  else if(keynum == PATTERN_CHAIN_INDICATOR)
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_CHAIN_EDIT);
     }
   }
   else if (keynum == PLAY_INDICATOR) //start/stop key
@@ -339,6 +347,64 @@ void PatternSelect::setLEDs(bool entry)
   }
 
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
+//////// Chain Editor
+///////////////////////////////////////////////////////////////////////////////////////
+
+
+ChainEdit::ChainEdit()
+{
+  
+}
+  
+void ChainEdit::HandleKey(uint32_t keynum, bool pressed)
+{
+  if(keynum == PATTERN_SEL_INDICATOR)
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_PATT_SEL);
+    }
+  }
+  else if(keynum == PLAY_INDICATOR) //start/stop key
+  {
+    HandlePlayButton(pressed);
+  }
+  else if((keynum >= 0) && (keynum <= 15))
+  {
+    if(pressed)
+    {
+      thePlayer.addToChain(keynum);
+    }
+  }
+}
+
+void ChainEdit::setLEDs(bool entry)
+{
+  if(entry)
+  {
+    //theScanner.clearAllLED();
+    theScanner.clearAllBlinkingLEDs();
+    
+    // set mode indicator
+    theScanner.setBackgroundLED(PATTERN_CHAIN_INDICATOR);
+    //theScanner.setBackgroundLED(thePattern.getCurrentPattern());
+
+    for(uint32_t i = 0; i < Pattern::NUM_PATTERNS; i++)
+    {
+      theScanner.setBackgroundLED(i, thePlayer.checkChainMembership(i));
+    }
+    theScanner.setBlinkingLED(thePattern.getCurrentPattern());
+  }
+  else
+  {
+    theScanner.clearAllBackgroundLEDs();
+    theScanner.clearAllBlinkingLEDs();
+  }
+
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //////// Utility mode

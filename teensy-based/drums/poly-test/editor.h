@@ -21,6 +21,7 @@ public:
     eMODE_VOICE_SEL,
     eMODE_MUTE_SEL,
     eMODE_PATT_SEL,
+    eMODE_CHAIN_EDIT,
     eMODE_UTILITY
   };
 
