@@ -152,7 +152,7 @@ void     Pattern::randomizeCurrentPattern()
 {
   for(uint32_t i = 0; i < PATTERN_LEN; i++)
   {
-    pattern_data[current_pattern][i] = random(0x0ff) & random(0x0ff) ;
+    pattern_data[current_pattern][i] = random(0x0fff) & random(0x0fff) ;
   }
 }
 

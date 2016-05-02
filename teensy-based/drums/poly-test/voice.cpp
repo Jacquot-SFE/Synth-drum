@@ -329,7 +329,7 @@ void triggerSnare(bool loud)
   }
   else
   {
-    snare.noteOn(0x6000);
+    snare.noteOn(0x5000);
   }
 }
 
