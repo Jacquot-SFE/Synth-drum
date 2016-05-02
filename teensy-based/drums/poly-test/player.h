@@ -20,14 +20,21 @@ public:
 
   bool toggleMuteBit(uint32_t bit);
   bool getMuteBit(uint32_t bit);
+  bool getPendingMuteBit(uint32_t bit);
 
   bool setNextPattern(int32_t next);
   int32_t getActivePattern();
+  int32_t getPendingPattern();
+
+  int32_t getCurrentStep();
 
   void tick();
 
   static const uint32_t CHAIN_LEN = 32;
 
+  // Chain Stuff
+  bool    chainIsActive();
+  void    initChain();
   void    addToChain(int32_t patt_num);
   int32_t getNextChainVal();
   bool    checkChainMembership(int32_t patt);

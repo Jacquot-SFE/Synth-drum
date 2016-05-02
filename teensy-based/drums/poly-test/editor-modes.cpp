@@ -22,6 +22,47 @@ static const int32_t UTILITY_SEL_INDICATOR = 0x15;
 static const int32_t PLAY_INDICATOR = 0x17;
 
 ///////////////////////////////////////////////////////////////////////////////////////
+// common implementation because chain display 
+// is used by chain and patt sel modes.
+///////////////////////////////////////////////////////////////////////////////////////
+
+static void doChainLeds()
+{
+  if(thePlayer.chainIsActive())
+  {
+    //theScanner.clearAllLED();
+    theScanner.clearAllBlinkingLEDs();
+    
+    for(uint32_t i = 0; i < Pattern::NUM_PATTERNS; i++)
+    {
+      theScanner.setBlinkingLED(i, thePlayer.checkChainMembership(i));
+    }
+    // blinking overrides background, so
+    // to mark current pattern, unset blinking, 
+    // set background
+    theScanner.clearBlinkingLED(thePattern.getCurrentPattern());
+    theScanner.setBackgroundLED(thePattern.getCurrentPattern());
+  }
+}
+
+static void doPlayingLed()
+{
+  theScanner.clearAllOverlayLEDs();
+  
+  if(thePlayer.isPlaying())
+  {
+    theScanner.setOverlayLED(thePlayer.getCurrentStep());
+    theScanner.setBackgroundLED(PLAY_INDICATOR);
+  }
+  else
+  {
+    theScanner.clearBackgroundLED(PLAY_INDICATOR);
+  }
+
+ 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
 //////// Base Class
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -116,14 +157,13 @@ void StepEdit::setLEDs(bool entry)
   // Initialize LEDs 
   if(entry)
   {
+    doPlayingLed();
+    
     theScanner.setBackgroundLED(STEP_EDIT_INDICATOR);
     
     for(uint32_t i = 0; i < Pattern::PATTERN_LEN; i++)
     {
-      if(thePattern.getVoiceBit(i))
-      {
-        theScanner.setBackgroundLED(i);
-      }
+      theScanner.setBackgroundLED(i, thePattern.getVoiceBit(i));
     }
   }
   else // on exit
@@ -175,6 +215,8 @@ void VoiceSelect::setLEDs(bool entry)
   
   if(entry)
   {
+    doPlayingLed();
+    
     // Mode indication
     theScanner.setBackgroundLED(VOICE_SEL_INDICATOR);
 
@@ -250,14 +292,20 @@ void MuteSelect::setLEDs(bool entry)
 {
   if(entry)
   {
+    doPlayingLed();
+    
     // set mode indicator
     theScanner.setBackgroundLED(MUTE_SEL_INDICATOR);
 
-    // and siaplay data on editor buttons
+    // and display data on editor buttons
     for(uint32_t i = 0; i < 8; i++)
     {
       theScanner.setBackgroundLED(i, thePlayer.getMuteBit(i));
+      // blinking overrides background
+      theScanner.setBlinkingLED(i, thePlayer.getPendingMuteBit(i));
     }
+
+    
   }
   else
   {
@@ -303,6 +351,7 @@ void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
   {
     if(pressed)
     {
+      thePlayer.initChain();
       theEditor.setMode(Editor::eMODE_CHAIN_EDIT);
     }
   }
@@ -314,13 +363,19 @@ void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
   {
     if(pressed)
     {
+      // if there was a chain, end it
+      if(thePlayer.chainIsActive())
+      {
+        thePlayer.initChain();
+      }
+
       if(thePlayer.isPlaying())
       {
-          // returns true if next pattern is different
-          if(thePlayer.setNextPattern(keynum))
-          {
-            theScanner.setBlinkingLED(keynum);
-          }
+        // returns true if next pattern is different
+        if(thePlayer.setNextPattern(keynum))
+        {
+          theScanner.setBlinkingLED(keynum);
+        }
       }
       else
       {
@@ -334,11 +389,31 @@ void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
 
 void PatternSelect::setLEDs(bool entry)
 {
+  int32_t pending;
+  
   if(entry)
   {
+    theScanner.clearAllBackgroundLEDs();
+    theScanner.clearAllBlinkingLEDs();
+
+    doPlayingLed();
+    
     // set mode indicator
     theScanner.setBackgroundLED(PATTERN_SEL_INDICATOR);
-    theScanner.setBackgroundLED(thePattern.getCurrentPattern());
+
+    if(!thePlayer.chainIsActive())
+    {
+      theScanner.setBackgroundLED(thePattern.getCurrentPattern());
+      pending = thePlayer.getPendingPattern();
+      if(pending != -1)
+      {
+        theScanner.setBlinkingLED(pending);
+      }
+    }
+    else
+    {
+      doChainLeds();
+    }
   }
   else
   {
@@ -360,9 +435,9 @@ ChainEdit::ChainEdit()
   
 void ChainEdit::HandleKey(uint32_t keynum, bool pressed)
 {
-  if(keynum == PATTERN_SEL_INDICATOR)
+  if(keynum == PATTERN_CHAIN_INDICATOR)
   {
-    if(pressed)
+    if(!pressed)
     {
       theEditor.setMode(Editor::eMODE_PATT_SEL);
     }
@@ -384,18 +459,12 @@ void ChainEdit::setLEDs(bool entry)
 {
   if(entry)
   {
-    //theScanner.clearAllLED();
-    theScanner.clearAllBlinkingLEDs();
+    doPlayingLed();
     
+    doChainLeds();
+
     // set mode indicator
     theScanner.setBackgroundLED(PATTERN_CHAIN_INDICATOR);
-    //theScanner.setBackgroundLED(thePattern.getCurrentPattern());
-
-    for(uint32_t i = 0; i < Pattern::NUM_PATTERNS; i++)
-    {
-      theScanner.setBackgroundLED(i, thePlayer.checkChainMembership(i));
-    }
-    theScanner.setBlinkingLED(thePattern.getCurrentPattern());
   }
   else
   {
@@ -455,6 +524,8 @@ void UtilityMode::setLEDs(bool entry)
   
   if(entry)
   {
+    doPlayingLed();
+    
     // Mode indication
     theScanner.setBackgroundLED(UTILITY_SEL_INDICATOR);
 

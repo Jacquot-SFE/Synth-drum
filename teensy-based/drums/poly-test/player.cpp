@@ -2,18 +2,8 @@
 
 #include "player.h"
 #include "pattern.h"
-#include "panel-scanner.h"
 #include "editor.h"
-
 #include "voice.h"
-
-// TBD: clean this mess up
-// ugly way to get to the voices...
-#include <Audio.h>
-#include "Synth-Clatter.h"
-#include "Synth-Decay.h"
-#include "Synth-DrumHeart.h"
-
 #include "voice.h"
 
 // Similar, for the pattern...
@@ -41,14 +31,22 @@ void Player::start()
 {
   playing = true;
   current_step = 0;
-  theScanner.setOverlayLED(0x17);
+
+  if(chain_active)
+  {
+    chain_play_idx = 0;
+    active_pattern = chain_array[0];
+    thePattern.setCurrentPattern(active_pattern);
+  }
+  
+  //theScanner.setOverlayLED(0x17);
+  theEditor.forceLEDs();
 }
 
 void Player::stop()
 {
   playing = false;
-  theScanner.clearOverlayLED(0x17);
-  theScanner.clearOverlayLED(prev_step);
+  theEditor.forceLEDs();
 }
 
 bool Player::isPlaying()
@@ -103,7 +101,17 @@ bool Player::getMuteBit(uint32_t bit)
   return (active_mutes & (1 << bit));
 }
 
-bool Player::setNextPattern(uint32_t next)
+bool Player::getPendingMuteBit(uint32_t bit)
+{
+  if(bit > 8)
+    return false;
+
+  return (pending_mutes & (1 << bit));
+}
+
+
+
+bool Player::setNextPattern(int32_t next)
 {
   if(next > Pattern::NUM_PATTERNS)
     return false;
@@ -133,6 +141,97 @@ int32_t Player::getActivePattern()
   return active_pattern;
 }
 
+int32_t Player::getPendingPattern()
+{
+  return pending_pattern;
+}
+
+
+int32_t Player::getCurrentStep()
+{
+  return current_step;
+}
+
+////////////////////////////////////////////////////////////////
+// chain stuff
+////////////////////////////////////////////////////////////////
+
+bool  Player::chainIsActive()
+{
+  return chain_active;
+}
+
+void  Player::initChain()
+{
+  chain_active = false;
+  chain_insert_idx = 0;
+  chain_play_idx = 0;
+}
+
+void Player::addToChain(int32_t patt_num)
+{
+  if(patt_num >= Pattern::NUM_PATTERNS)
+  {
+    Serial.println("addToChain patt_num out of bounds!");
+    return;
+  }
+
+  Serial.print("Adding patt ");
+  Serial.print(patt_num);
+  Serial.print("to chain at idx ");
+  Serial.println(chain_insert_idx);
+
+  if(!chain_active)
+  {
+    // the first piece added to chain
+    chain_active = true;
+    chain_array[0] = patt_num;
+    chain_insert_idx = 1;
+    chain_play_idx = -1;// one before the first step - it'll increment and be at beginning
+    theEditor.forceLEDs();
+    return;
+  }
+
+  if(chain_insert_idx < CHAIN_LEN)
+  {
+    chain_array[chain_insert_idx] = patt_num;
+    chain_insert_idx++;
+    theEditor.forceLEDs();
+  }
+
+}
+
+int32_t Player::getNextChainVal()
+{
+  chain_play_idx++;
+  if(chain_play_idx >= chain_insert_idx)
+  {
+    chain_play_idx = 0;
+  }
+
+#if 0
+  Serial.print("Getting next chain pattern, (idx, val):");
+  Serial.print(chain_play_idx);
+  Serial.print(" ");
+  Serial.println(chain_array[chain_play_idx]);
+#endif
+
+  return chain_array[chain_play_idx];
+}
+
+bool   Player::checkChainMembership(int32_t patt)
+{
+  // is patt # active within chain?
+  for(int32_t i = 0; i < chain_insert_idx; i++)
+  {
+    if(patt == chain_array[i])
+    {
+      //Serial.println("found chain member");
+      return true;
+    }
+  }
+  return false;
+}
 
 void Player::tick()
 {
@@ -163,6 +262,8 @@ void Player::tick()
       next_time = now + ((2*pause_len)/3);
     }
   }
+
+  
    
   //
   uint32_t trigdata = thePattern.getStepData(current_step);
@@ -170,9 +271,7 @@ void Player::tick()
   // Apply mutes
   trigdata &= (~active_mutes);
 
-  theScanner.clearOverlayLED(prev_step);
-  theScanner.setOverlayLED(current_step);
-  //theScanner.doTransaction();
+  theEditor.forceLEDs();
 
 #if 0
   Serial.print("Trigger: step#");
@@ -222,32 +321,39 @@ void Player::tick()
 
   AudioInterrupts();
 
-  // Keep track of previous step so we can turn
-  // it's LED off
-  prev_step = current_step; 
   current_step++;
-  if(current_step > 0x0f)
+  if(current_step >= 0x10)
   {
+    // this block of code is setting up the NEXT invocation, so we can change 
+    // patterns without overhead before the next set of triggers.
+    // It means that come instenal state is ahead of the actual playback state - 
+    // the takeaway: don't call theEditor.forceLEDs(), or the display gets out of sync
+    
     current_step = 0;
     if(pending_mutes)
     {
       active_mutes ^= pending_mutes;
       pending_mutes = 0;
-
-      theScanner.clearAllBlinkingLEDs();
-      theEditor.forceLEDs();
     }
 
-    if(pending_pattern != -1)
+    if(!chain_active)
     {
-      active_pattern = pending_pattern;
-      thePattern.setCurrentPattern(pending_pattern);
-      pending_pattern = -1;
-
-      theScanner.clearAllBlinkingLEDs();
-      theScanner.clearAllBackgroundLEDs();
-      theEditor.forceLEDs();
+      if(pending_pattern != -1)
+      {
+        active_pattern = pending_pattern;
+        thePattern.setCurrentPattern(pending_pattern);
+        pending_pattern = -1;
+      }
+      //else, just keep current pattern...
     }
+    else//chain_active
+    {
+      active_pattern = getNextChainVal();
+      thePattern.setCurrentPattern(active_pattern);
+    }
+
+    // do this after the LED updates, or they get the wrong current step!
+    current_step = 0;
   }
 }
 

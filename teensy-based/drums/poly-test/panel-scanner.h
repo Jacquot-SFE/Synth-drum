@@ -28,6 +28,7 @@ public:
   
   void setOverlayLED(uint32_t num);
   void clearOverlayLED(uint32_t num);
+  void clearAllOverlayLEDs();
 
   void dumpLEDs();
 
