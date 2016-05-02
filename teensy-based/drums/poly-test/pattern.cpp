@@ -10,7 +10,7 @@ static const uint32_t sequence[Pattern::PATTERN_LEN] =
 #if 0
   //shaker and toms....
   //S123OCSK
-  0b01000001,
+  0b100001000001,
   0b00000000,
   0b10100000,
   0b10000000,
@@ -28,7 +28,7 @@ static const uint32_t sequence[Pattern::PATTERN_LEN] =
   0b10010000,
 #else
   //kick, snare & hats
-  0b00000101,
+  0b100000000101,
   0b00000100,
   0b10000100,
   0b10000101,

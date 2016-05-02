@@ -14,11 +14,12 @@ void paramUpdate1();
 void paramUpdate2();
 void paramUpdate3();
 
-void triggerKick();
-void triggerSnare();
+void triggerKick(bool loud = true);
+void triggerSnare(bool loud = true);
 void triggerTom(int32_t num);
 void triggerShaker();
 void triggerHat(bool open);
 void triggerBell();
+void triggerCymbal();
 
 #endif // keepout

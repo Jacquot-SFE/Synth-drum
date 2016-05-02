@@ -15,6 +15,7 @@ extern Player thePlayer;
 #define TOM
 #define SHAKER
 #define BELL
+#define CYMBAL
 
 // Used by multiple instruments:
 AudioSynthNoiseWhite   noise;
@@ -54,6 +55,12 @@ AudioSynthSimpleDrum   tom;
 AudioSynthDecay        shakedecay;
 AudioFilterBiquad      shakefilter;
 AudioEffectMultiply    shakemult;
+#endif
+
+#ifdef CYMBAL
+AudioSynthDecay        cymbaldecay;
+AudioFilterBiquad      cymbalfilter;
+AudioEffectMultiply    cymbalmult;
 #endif
 
 // outputs
@@ -98,6 +105,13 @@ AudioConnection          patchCord40(noise, 0, shakefilter, 0);
 AudioConnection          patchCord41(shakefilter, 0, shakemult, 0);
 AudioConnection          patchCord42(shakedecay, 0, shakemult, 1);
 AudioConnection          patchCord95(shakemult, 0, mixer2, 1);
+#endif
+
+#ifdef CYMBAL
+AudioConnection          patchCord50(clat1, 0, cymbalfilter, 0);
+AudioConnection          patchCord51(cymbalfilter, cymbalmult);
+AudioConnection          patchCord52(cymbaldecay, 0, cymbalmult, 1);
+AudioConnection          patchCord97(cymbalmult, 0, mixer2, 3);
 #endif
 
 //AudioConnection          patchCord96(noise, 0, mixer2, 2);
@@ -188,6 +202,13 @@ void paramInit()
   shakefilter.setHighpass(1, 400, 0.3);
   shakedecay.length(50);
 #endif
+
+#ifdef CYMBAL
+  cymbalfilter.setLowpass(0, 4500, 0.3);
+  cymbalfilter.setHighpass(1, 770, 0.7);
+  cymbaldecay.length(1000);
+#endif
+
   // Master
   mixer1.gain(0, 0.75);// hat
   mixer1.gain(1, 0.75);// kik
@@ -196,7 +217,7 @@ void paramInit()
   mixer2.gain(0, 0.75);// tom
   mixer2.gain(1, 0.5);//shaker
   mixer2.gain(2, 0.5);// bell
-  mixer2.gain(3, 0.0);
+  mixer2.gain(3, 0.5);// cymbal
 }
 
 void paramUpdate1()
@@ -240,7 +261,7 @@ void paramUpdate2()
   uint16_t   p1, p2, p3;
   uint16_t  len, mod;
   uint16_t  secondskin;
-  uint16_t  slen;
+  //uint16_t  slen;
 
   p1 = analogRead(A7);
   p2 = analogRead(A10);
@@ -288,14 +309,28 @@ void paramUpdate3()
 
 
 
-void triggerKick()
+void triggerKick(bool loud)
 {
-  kick.noteOn();
+  if(loud)
+  {
+    kick.noteOn();
+  }
+  else
+  {
+    kick.noteOn(0x6000);
+  }
 }
 
-void triggerSnare()
+void triggerSnare(bool loud)
 {
-  snare.noteOn();
+  if(loud)
+  {
+    snare.noteOn();
+  }
+  else
+  {
+    snare.noteOn(0x6000);
+  }
 }
 
 void triggerTom(int32_t num)
@@ -340,5 +375,12 @@ void triggerHat(bool open)
 void triggerBell()
 {
   belldecay.noteOn();
+}
+
+void triggerCymbal()
+{
+  Serial.println("cymbal");
+  
+  cymbaldecay.noteOn();
 }
 

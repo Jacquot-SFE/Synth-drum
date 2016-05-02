@@ -51,7 +51,7 @@ public:
     pitchMod(0x200);
     wav_second= false;
   }
-  void noteOn();
+  void noteOn(int16_t topval = 0x7fff);
 
   void frequency(float freq)
   {

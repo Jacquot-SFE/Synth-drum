@@ -37,7 +37,7 @@ extern const int16_t AudioWaveformSine[257];
 
 //static bool trap;
 
-void AudioSynthDrumHeart::noteOn(void)
+void AudioSynthDrumHeart::noteOn(int16_t topval)
 {
   //__disable_irq();
 
@@ -47,7 +47,7 @@ void AudioSynthDrumHeart::noteOn(void)
     wav_phasor2 = 0;
   }
 
-  env_lin_current = 0x7fff0000;
+  env_lin_current = (topval << 16);
   
   //trap = false;
   

@@ -197,7 +197,7 @@ void VoiceSelect::HandleKey(uint32_t keynum, bool pressed)
   {
     HandlePlayButton(pressed);
   }
-  else if((keynum >= 0) && (keynum <= 8))
+  else if((keynum >= 0) && (keynum <= 11))
   {
     // TBD - more voices means accept more input
     if(pressed)
@@ -270,7 +270,7 @@ void MuteSelect::HandleKey(uint32_t keynum, bool pressed)
     }
   }
 
-  else if((keynum >= 0) && (keynum <= 7))
+  else if((keynum >= 0) && (keynum <= 11))
   {
     if(pressed)
     {
@@ -298,7 +298,7 @@ void MuteSelect::setLEDs(bool entry)
     theScanner.setBackgroundLED(MUTE_SEL_INDICATOR);
 
     // and display data on editor buttons
-    for(uint32_t i = 0; i < 8; i++)
+    for(uint32_t i = 0; i < 12; i++)
     {
       theScanner.setBackgroundLED(i, thePlayer.getMuteBit(i));
       // blinking overrides background

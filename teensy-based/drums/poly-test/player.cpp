@@ -76,7 +76,7 @@ bool Player::getSwing()
 
 bool Player::toggleMuteBit(uint32_t bit)
 {
-  if(bit > 8)
+  if(bit > 12)
     return false;
 
   if(playing)
@@ -95,7 +95,7 @@ bool Player::toggleMuteBit(uint32_t bit)
  
 bool Player::getMuteBit(uint32_t bit)
 {
-  if(bit > 8)
+  if(bit > 12)
     return false;
 
   return (active_mutes & (1 << bit));
@@ -103,7 +103,7 @@ bool Player::getMuteBit(uint32_t bit)
 
 bool Player::getPendingMuteBit(uint32_t bit)
 {
-  if(bit > 8)
+  if(bit > 12)
     return false;
 
   return (pending_mutes & (1 << bit));
@@ -286,10 +286,19 @@ void Player::tick()
   {
     triggerKick();
   }
+  else if (trigdata & 0x200)
+  {
+    triggerKick(false);
+  }
   if (trigdata & 0x02)
   {
     triggerSnare();
   }
+  else if(trigdata & 0x400)
+  {
+    triggerSnare(false);
+  }
+    
   if (trigdata & 0x04)
   {
     triggerHat(false);
@@ -318,6 +327,11 @@ void Player::tick()
   {
     triggerShaker();
   }
+  if (trigdata & 0x800)
+  {
+    triggerCymbal();
+  }
+  
 
   AudioInterrupts();
 
