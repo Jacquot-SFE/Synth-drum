@@ -167,9 +167,9 @@ void PanelScanner::clearBlinkingLED(uint32_t num)
 
 void PanelScanner::clearAllBlinkingLEDs()
 {
-
+#if 0
   Serial.println("Clear all blinking");
-
+#endif
   for(uint32_t i = 0; i < NUM_PANELS; i++)
   {
     led_blinking_buffer[i] = 0;
@@ -181,8 +181,10 @@ void PanelScanner::setOverlayLED(uint32_t num)
 {
   uint32_t byte_idx, bit_num;
 
+#if 0
   Serial.print("OL on #");
   Serial.println(num);
+#endif
 
   // Funny math at play here.
   // LEDs are out of order WRT the buttons...the first bit shifted in is the 

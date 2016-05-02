@@ -106,7 +106,7 @@ bool Pattern::getVoiceBit(uint32_t step)
     Serial.println("Overflow in pattern bit");
     step %= PATTERN_LEN; 
   }
-#if 1
+#if 0
   Serial.print("GVB: curr ")  ;
   Serial.print(current_pattern)  ;
   Serial.print(" step ")  ;
