@@ -273,7 +273,7 @@ void Player::tick()
 
   theEditor.forceLEDs();
 
-#if 0
+#if 1
   Serial.print("Trigger: step#");
   Serial.print(current_step);
   Serial.print(" bitmap:");
@@ -284,52 +284,44 @@ void Player::tick()
 
   if (trigdata & 0x01)
   {
-    triggerKick();
-  }
-  else if (trigdata & 0x200)
-  {
-    triggerKick(false);
+    triggerKick(trigdata & 0x010000);
   }
   if (trigdata & 0x02)
   {
-    triggerSnare();
+    triggerSnare(trigdata & 0x020000);
   }
-  else if(trigdata & 0x400)
-  {
-    triggerSnare(false);
-  }
-    
   if (trigdata & 0x04)
   {
-    triggerHat(false);
+    // closed hat trumps open hat.
+    triggerHat(false, trigdata & 0x040000);
   }
   else if (trigdata & 0x08)
   {
-    triggerHat(true);  
+    triggerHat(true, trigdata & 0x080000);  
   }
   if (trigdata & 0x10)
   {
-    triggerTom(1);
+    triggerTom(1, trigdata & 0x100000);
   }
   else if (trigdata & 0x20)
   {
-    triggerTom(2);
+    triggerTom(2, trigdata & 0x200000);
   } 
   else if (trigdata & 0x40)
   {
-    triggerTom(3);
+    triggerTom(3, trigdata & 0x400000);
   }
   if (trigdata & 0x80)
   {
-    triggerBell();
+    triggerBell(trigdata & 0x800000);
   }
   if (trigdata & 0x100)
   {
-    triggerShaker();
+    triggerShaker(trigdata & 0x1000000);
   }
-  if (trigdata & 0x800)
+  if (trigdata & 0x200)
   {
-    triggerCymbal();
+    triggerCymbal(trigdata & 0x2000000);
   }
   
 

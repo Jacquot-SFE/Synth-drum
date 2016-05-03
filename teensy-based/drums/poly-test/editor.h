@@ -18,6 +18,7 @@ public:
   enum EditorMode
   {
     eMODE_STEP_EDIT = 0,
+    eMODE_STEP_ACCENT,
     eMODE_VOICE_SEL,
     eMODE_MUTE_SEL,
     eMODE_PATT_SEL,

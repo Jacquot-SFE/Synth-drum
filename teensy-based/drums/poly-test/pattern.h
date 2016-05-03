@@ -15,6 +15,7 @@ public:
   Pattern();
 
   bool     toggleBit(uint32_t step);
+  bool     toggleAccentBit(uint32_t step);
 
   void     setCurrentVoice(uint32_t);
   uint32_t getCurrentVoice(void);
@@ -27,6 +28,7 @@ public:
 
   uint32_t getStepData(uint32_t index);
   bool     getVoiceBit(uint32_t step);
+  bool     getAccentBit(uint32_t step);
 
   bool     writeToCard();
   bool     readFromCard();
@@ -38,6 +40,7 @@ private:
   uint32_t current_pattern;
   uint32_t current_voice;
   uint32_t current_voice_mask;
+  uint32_t current_accent_mask;
   
 
 };

@@ -31,6 +31,17 @@ class StepEdit: public pvEditorMode
 
 };
 
+class StepAccent: public pvEditorMode
+{
+  public:
+
+    StepAccent();
+    virtual void HandleKey(uint32_t keynum, bool pressed);
+    virtual void setLEDs(bool entry);
+  private:
+
+};
+
 class VoiceSelect: public pvEditorMode
 {
   public:

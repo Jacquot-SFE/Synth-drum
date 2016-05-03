@@ -212,10 +212,10 @@ void paramInit()
   // Master
   mixer1.gain(0, 0.75);// hat
   mixer1.gain(1, 0.75);// kik
-  mixer1.gain(2, 0.75);// snr
+  mixer1.gain(2, 0.65);// snr
   mixer1.gain(3, 0.75);// mix2
   mixer2.gain(0, 0.75);// tom
-  mixer2.gain(1, 0.5);//shaker
+  mixer2.gain(1, 0.3);//shaker
   mixer2.gain(2, 0.5);// bell
   mixer2.gain(3, 0.5);// cymbal
 }
@@ -333,54 +333,57 @@ void triggerSnare(bool loud)
   }
 }
 
-void triggerTom(int32_t num)
+void triggerTom(int32_t num, bool loud)
 {
   if (num == 1)
   {
     tom.frequency(t1);
-    tom.noteOn();
+    tom.noteOn(loud?0x7fff:0x6000);
   }
   else if (num == 2)
   {
     tom.frequency(t2);
-    tom.noteOn();
+    tom.noteOn(loud?0x7fff:0x6000);
   }
   else if (num == 3)
   {
     tom.frequency(t3);
-    tom.noteOn();
+    tom.noteOn(loud?0x7fff:0x6000);
   }
 }
 
-void triggerShaker()
+
+void triggerShaker(bool loud)
 {
-  shakedecay.noteOn();
+  shakedecay.noteOn(loud?0x7fff:0x6000);
 }
 
-void triggerHat(bool open)
+void triggerHat(bool open, bool loud)
 {
   if (!open)
   {
     hatdecay.length(closedlen);
-    hatdecay.noteOn();
+    hatdecay.noteOn(loud?0x7fff:0x6000);
   }
   else
   {
     hatdecay.length(openlen);
-    hatdecay.noteOn();
+    hatdecay.noteOn(loud?0x7fff:0x6000);
   }
   
 }
 
-void triggerBell()
+
+void triggerBell(bool loud)
 {
-  belldecay.noteOn();
+  belldecay.noteOn(loud?0x7fff:0x6000);
 }
 
-void triggerCymbal()
+
+void triggerCymbal(bool loud)
 {
   Serial.println("cymbal");
   
-  cymbaldecay.noteOn();
+  cymbaldecay.noteOn(loud?0x7fff:0x6000);
 }
 

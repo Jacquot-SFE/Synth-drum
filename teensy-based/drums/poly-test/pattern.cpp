@@ -54,13 +54,13 @@ static const uint8_t SD_CHIPSEL = 10;
 Pattern::Pattern()
 {
 
-  // Only init internal data - 
-  // adding dependencies on other items at this point is tricky, if we aren't really careful 
+  // Only init internal data -
+  // adding dependencies on other items at this point is tricky, if we aren't really careful
   // about order of construction.
 
-  for(uint32_t i = 0; i < PATTERN_LEN; i++)
+  for (uint32_t i = 0; i < PATTERN_LEN; i++)
   {
-    for(uint32_t j = 0; j < NUM_PATTERNS; j++)
+    for (uint32_t j = 0; j < NUM_PATTERNS; j++)
     {
       pattern_data[j][i] = sequence[i];
     }
@@ -69,42 +69,61 @@ Pattern::Pattern()
   setCurrentVoice(0);
   setCurrentPattern(0);
 
+  current_voice_mask  = 0x01;
+  current_accent_mask = 0x010000;
+
 }
+
 
 bool Pattern::toggleBit(uint32_t index)
 {
-  if(index >= PATTERN_LEN)
+  if (index >= PATTERN_LEN)
   {
     Serial.println("Overflow in toggle");
-    index %= PATTERN_LEN; 
+    index %= PATTERN_LEN;
   }
 
   pattern_data[current_pattern][index] ^= current_voice_mask;
 
-  return(pattern_data[current_pattern][index] & current_voice_mask);
-  
+  return (pattern_data[current_pattern][index] & current_voice_mask);
 }
+
+
+bool Pattern::toggleAccentBit(uint32_t index)
+{
+  if (index >= PATTERN_LEN)
+  {
+    Serial.println("Overflow in toggle");
+    index %= PATTERN_LEN;
+  }
+
+  pattern_data[current_pattern][index] ^= current_accent_mask;
+
+  return (pattern_data[current_pattern][index] & current_accent_mask);
+}
+
+
 
 
 // Return all of the buts for the current step
 uint32_t Pattern::getStepData(uint32_t index)
 {
-  if(index >= PATTERN_LEN)
+  if (index >= PATTERN_LEN)
   {
     Serial.println("Overflow in pattern req");
-    index %= PATTERN_LEN; 
+    index %= PATTERN_LEN;
   }
-  
+
   return pattern_data[current_pattern][index];
 }
 
 // Get all of the column data for a particular voice
 bool Pattern::getVoiceBit(uint32_t step)
 {
-  if(step >= PATTERN_LEN)
+  if (step >= PATTERN_LEN)
   {
     Serial.println("Overflow in pattern bit");
-    step %= PATTERN_LEN; 
+    step %= PATTERN_LEN;
   }
 #if 0
   Serial.print("GVB: curr ")  ;
@@ -112,14 +131,33 @@ bool Pattern::getVoiceBit(uint32_t step)
   Serial.print(" step ")  ;
   Serial.println(step)  ;
 #endif
-  
+
   return (pattern_data[current_pattern][step] & current_voice_mask);
 }
+
+bool Pattern::getAccentBit(uint32_t step)
+{
+  if (step >= PATTERN_LEN)
+  {
+    Serial.println("Overflow in pattern bit");
+    step %= PATTERN_LEN;
+  }
+#if 0
+  Serial.print("GVB: curr ")  ;
+  Serial.print(current_pattern)  ;
+  Serial.print(" step ")  ;
+  Serial.println(step)  ;
+#endif
+
+  return (pattern_data[current_pattern][step] & current_accent_mask);
+}
+
 
 void Pattern::setCurrentVoice(uint32_t num)
 {
   current_voice = num;
   current_voice_mask = 1 << num;
+  current_accent_mask = 1 << (num + 16);
 }
 
 uint32_t Pattern::getCurrentVoice(void)
@@ -129,7 +167,7 @@ uint32_t Pattern::getCurrentVoice(void)
 
 void Pattern::setCurrentPattern(uint32_t nextpatt)
 {
-  if(nextpatt < NUM_PATTERNS)
+  if (nextpatt < NUM_PATTERNS)
   {
     current_pattern = nextpatt;
   }
@@ -142,7 +180,7 @@ uint32_t Pattern::getCurrentPattern()
 
 void     Pattern::clearCurrentPattern()
 {
-  for(uint32_t i = 0; i < PATTERN_LEN; i++)
+  for (uint32_t i = 0; i < PATTERN_LEN; i++)
   {
     pattern_data[current_pattern][i] = 0;
   }
@@ -150,7 +188,7 @@ void     Pattern::clearCurrentPattern()
 
 void     Pattern::randomizeCurrentPattern()
 {
-  for(uint32_t i = 0; i < PATTERN_LEN; i++)
+  for (uint32_t i = 0; i < PATTERN_LEN; i++)
   {
     pattern_data[current_pattern][i] = random(0x0fff) & random(0x0fff) ;
   }
@@ -164,25 +202,25 @@ bool     Pattern::writeToCard()
   File fd;
   size_t len;
   bool success = false;
-  
+
   // shouldn't reach here if playing.
 
   Serial.println("***** Attempting pattern file write");
 
-  if(SD.exists("test.txt"))
+  if (SD.exists("test.txt"))
   {
     Serial.println("** found test file!");
   }
   else
   {
     Serial.println("** NO test file!");
-  }    
+  }
 
 
   fd = SD.open("patt.txt", FILE_WRITE);
 
-  if(!fd)
-  {  
+  if (!fd)
+  {
     Serial.println("** no fd!");
     goto CLEANUP;
   }
@@ -193,18 +231,18 @@ bool     Pattern::writeToCard()
   Serial.print("Pattern memoty total length: ");
   Serial.println(len);
 
-  if(fd.write((uint8_t*)pattern_data, len) != len)
+  if (fd.write((uint8_t*)pattern_data, len) != len)
   {
-    Serial.println("** Bad write length");        
+    Serial.println("** Bad write length");
     goto CLEANUP;
   }
 
   success = true;
-  Serial.println("***** Pattern file completely written.");  
+  Serial.println("***** Pattern file completely written.");
 
 CLEANUP:
 
-  if(fd)
+  if (fd)
   {
     Serial.println("Cleaning up fd");
     fd.flush();
@@ -214,7 +252,7 @@ CLEANUP:
   return success;
 }
 
-  
+
 bool     Pattern::readFromCard()
 {
   File fd;
@@ -224,21 +262,21 @@ bool     Pattern::readFromCard()
   uint8_t val;
   uint8_t* munge = (uint8_t*)pattern_data;
 
-  
+
   Serial.println("***** Attempting pattern file read");
 
-  if(!SD.exists("patt.txt"))
+  if (!SD.exists("patt.txt"))
   {
     Serial.println("** NO pattern file!");
     goto CLEANUP;
-  }    
-  
+  }
+
   Serial.println("** found pattern file!");
 
   fd = SD.open("patt.txt", FILE_READ);
 
-  if(!fd)
-  {  
+  if (!fd)
+  {
     Serial.println("** no fd!");
     goto CLEANUP;
   }
@@ -253,13 +291,13 @@ bool     Pattern::readFromCard()
   Serial.print("File has bytes: ");
   Serial.println(avail);
 
-  if(len != avail)
+  if (len != avail)
   {
     Serial.println("File Read error: length/struct mismatch");
     goto CLEANUP;
   }
 
-  for(uint32_t i = 0; i < len; i++)
+  for (uint32_t i = 0; i < len; i++)
   {
     val = fd.read();
     munge[i] = val;
@@ -267,11 +305,11 @@ bool     Pattern::readFromCard()
 
   success = true;
 
-  Serial.println("***** Pattern file completely read.");  
+  Serial.println("***** Pattern file completely read.");
 
 CLEANUP:
 
-  if(fd)
+  if (fd)
   {
     Serial.println("Cleaning up fd");
     fd.flush();

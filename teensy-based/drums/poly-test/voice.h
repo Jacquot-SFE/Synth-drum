@@ -16,10 +16,10 @@ void paramUpdate3();
 
 void triggerKick(bool loud = true);
 void triggerSnare(bool loud = true);
-void triggerTom(int32_t num);
-void triggerShaker();
-void triggerHat(bool open);
-void triggerBell();
-void triggerCymbal();
+void triggerTom(int32_t num, bool loud = true);
+void triggerShaker(bool loud = true);
+void triggerHat(bool open, bool loud = true);
+void triggerBell(bool loud = true);
+void triggerCymbal(bool loud = true);
 
 #endif // keepout

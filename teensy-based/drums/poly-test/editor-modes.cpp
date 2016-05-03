@@ -16,9 +16,10 @@ extern Editor       theEditor;
 static const int32_t PATTERN_SEL_INDICATOR = 0x10;
 static const int32_t PATTERN_CHAIN_INDICATOR = 0x11;
 static const int32_t STEP_EDIT_INDICATOR = 0x12;
-static const int32_t VOICE_SEL_INDICATOR = 0x13;
-static const int32_t MUTE_SEL_INDICATOR = 0x14;
-static const int32_t UTILITY_SEL_INDICATOR = 0x15;
+static const int32_t STEP_ACCENT_INDICATOR = 0x13;
+static const int32_t VOICE_SEL_INDICATOR = 0x14;
+static const int32_t MUTE_SEL_INDICATOR = 0x15;
+static const int32_t UTILITY_SEL_INDICATOR = 0x16;
 static const int32_t PLAY_INDICATOR = 0x17;
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -121,6 +122,14 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
       theEditor.setMode(Editor::eMODE_VOICE_SEL);
     }
   }
+  else if(keynum ==   STEP_ACCENT_INDICATOR) // voice select mode
+  {
+    if(pressed)
+    {
+      theEditor.setMode(Editor::eMODE_STEP_ACCENT);
+    }
+  }
+
   else if(keynum == MUTE_SEL_INDICATOR)
   {
     if(pressed)
@@ -174,6 +183,63 @@ void StepEdit::setLEDs(bool entry)
   
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+//////// Accent Editor
+///////////////////////////////////////////////////////////////////////////////////////
+
+StepAccent::StepAccent(): pvEditorMode()
+{
+  //current_voice = 0;
+  
+}
+
+void StepAccent::HandleKey(uint32_t keynum, bool pressed)
+{
+  bool setting;
+
+  if(keynum == STEP_ACCENT_INDICATOR) 
+  {
+    if(!pressed)
+    {
+      theEditor.setMode(Editor::eMODE_STEP_EDIT);
+    }
+  }
+  else if (keynum == PLAY_INDICATOR) //start/stop key
+  {
+    HandlePlayButton(pressed);
+  }
+  else if((keynum >= 0) && (keynum <= 15))
+  {
+    if(pressed)
+    {
+      setting = thePattern.toggleAccentBit(keynum);
+      theScanner.setBackgroundLED(keynum, setting);
+    }
+  }
+}
+
+void StepAccent::setLEDs(bool entry)
+{
+  // Initialize LEDs 
+  if(entry)
+  {
+    doPlayingLed();
+    
+    theScanner.setBackgroundLED(STEP_ACCENT_INDICATOR);
+    
+    for(uint32_t i = 0; i < Pattern::PATTERN_LEN; i++)
+    {
+      theScanner.setBackgroundLED(i, thePattern.getAccentBit(i));
+    }
+  }
+  else // on exit
+  {
+    theScanner.clearAllBackgroundLEDs();
+    theScanner.clearAllBlinkingLEDs();
+  }
+  
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //////// Voice Selector
@@ -197,7 +263,7 @@ void VoiceSelect::HandleKey(uint32_t keynum, bool pressed)
   {
     HandlePlayButton(pressed);
   }
-  else if((keynum >= 0) && (keynum <= 11))
+  else if((keynum >= 0) && (keynum <= 9))
   {
     // TBD - more voices means accept more input
     if(pressed)
@@ -270,7 +336,7 @@ void MuteSelect::HandleKey(uint32_t keynum, bool pressed)
     }
   }
 
-  else if((keynum >= 0) && (keynum <= 11))
+  else if((keynum >= 0) && (keynum <= 9))
   {
     if(pressed)
     {
