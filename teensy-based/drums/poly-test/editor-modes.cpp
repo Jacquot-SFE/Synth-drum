@@ -31,7 +31,6 @@ static void doChainLeds()
 {
   if(thePlayer.chainIsActive())
   {
-    //theScanner.clearAllLED();
     theScanner.clearAllBlinkingLEDs();
     
     for(uint32_t i = 0; i < Pattern::NUM_PATTERNS; i++)
@@ -112,7 +111,7 @@ void StepEdit::HandleKey(uint32_t keynum, bool pressed)
     if(pressed)
     {
       setting = thePattern.toggleBit(keynum);
-      theScanner.setBackgroundLED(keynum, setting);
+      setLEDs(true);
     }
   }
   else if(keynum == VOICE_SEL_INDICATOR) // voice select mode
@@ -213,7 +212,7 @@ void StepAccent::HandleKey(uint32_t keynum, bool pressed)
     if(pressed)
     {
       setting = thePattern.toggleAccentBit(keynum);
-      theScanner.setBackgroundLED(keynum, setting);
+      setLEDs(true);
     }
   }
 }
@@ -268,9 +267,8 @@ void VoiceSelect::HandleKey(uint32_t keynum, bool pressed)
     // TBD - more voices means accept more input
     if(pressed)
     {
-      theScanner.clearBackgroundLED(thePattern.getCurrentVoice());
       thePattern.setCurrentVoice(keynum);
-      theScanner.setBackgroundLED(keynum);
+      setLEDs(true);
     }
   }
 }
@@ -341,15 +339,8 @@ void MuteSelect::HandleKey(uint32_t keynum, bool pressed)
     if(pressed)
     {
       setting = thePlayer.toggleMuteBit(keynum);
+      setLEDs(true);
       
-      if(thePlayer.isPlaying())
-      {
-        theScanner.setBlinkingLED(keynum, setting);
-      }
-      else
-      {
-        theScanner.setBackgroundLED(keynum, setting);
-      }
     }
   }
 }
@@ -435,20 +426,8 @@ void PatternSelect::HandleKey(uint32_t keynum, bool pressed)
         thePlayer.initChain();
       }
 
-      if(thePlayer.isPlaying())
-      {
-        // returns true if next pattern is different
-        if(thePlayer.setNextPattern(keynum))
-        {
-          theScanner.setBlinkingLED(keynum);
-        }
-      }
-      else
-      {
-        theScanner.clearBackgroundLED(thePlayer.getActivePattern());
-        thePlayer.setNextPattern(keynum);
-        theScanner.setBackgroundLED(keynum);
-      }
+      thePlayer.setNextPattern(keynum);
+      setLEDs(true);
     }
   }
 }
@@ -633,7 +612,8 @@ void UtilityMode::doUtilMode(uint32_t keynum, bool pressed)
     break;
     case 2:
     {
-      theScanner.setBackgroundLED(2, thePlayer.toggleSwing());
+      thePlayer.toggleSwing();
+      setLEDs(true);
     }
     break;
     case 14:
