@@ -176,6 +176,7 @@ void StepEdit::setLEDs(bool entry)
   }
   else // on exit
   {
+    theScanner.clearAllHalfLEDs();
     theScanner.clearAllBackgroundLEDs();
     theScanner.clearAllBlinkingLEDs();
   }
@@ -212,6 +213,16 @@ void StepAccent::HandleKey(uint32_t keynum, bool pressed)
     if(pressed)
     {
       setting = thePattern.toggleAccentBit(keynum);
+
+      // If we just added an accent, but note isn't triggered, trigger it.
+      // Likewise, if we cleared and accent, clear the trigger.
+      // Don't leave stranded accents, because they're an ugly surprise later...
+      if( (setting && !thePattern.getVoiceBit(keynum) ) ||
+          (!setting && thePattern.getVoiceBit(keynum)))
+      {
+        thePattern.toggleBit(keynum);
+      }
+      
       setLEDs(true);
     }
   }
@@ -229,10 +240,12 @@ void StepAccent::setLEDs(bool entry)
     for(uint32_t i = 0; i < Pattern::PATTERN_LEN; i++)
     {
       theScanner.setBackgroundLED(i, thePattern.getAccentBit(i));
+      theScanner.setHalfLED(i, thePattern.getVoiceBit(i));
     }
   }
   else // on exit
   {
+    theScanner.clearAllHalfLEDs();
     theScanner.clearAllBackgroundLEDs();
     theScanner.clearAllBlinkingLEDs();
   }

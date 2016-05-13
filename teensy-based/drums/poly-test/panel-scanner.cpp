@@ -14,8 +14,9 @@ static const SPISettings registersettings(500000, MSBFIRST, SPI_MODE0 );
 // constructor...
 PanelScanner::PanelScanner()
 {
-  for(uint32_t i = 0; i < NUM_PANELS; i++)
+  for (uint32_t i = 0; i < NUM_PANELS; i++)
   {
+    led_half_buffer[i] = 0;
     led_background_buffer[i] = 0;
     led_blinking_buffer[i] = 0;
     led_overlay_buffer[i] = 0;
@@ -25,15 +26,16 @@ PanelScanner::PanelScanner()
 
   tick_counter = 0;
   blink_phase = false;
+  slow_blink  = false;
 }
 
 void PanelScanner::initScanning()
 {
-//  SPI is shared with SD card, initialized in setup()
-//  SPI.setSCK(14);
-//  SPI.setMOSI(7);
-//  SPI.begin();
-  
+  //  SPI is shared with SD card, initialized in setup()
+  //  SPI.setSCK(14);
+  //  SPI.setMOSI(7);
+  //  SPI.begin();
+
   pinMode(CHIPSEL_BTNS, OUTPUT);
   digitalWrite(CHIPSEL_BTNS, LOW);
   pinMode(CHIPSEL_LEDS, OUTPUT);
@@ -47,21 +49,93 @@ void PanelScanner::tick()
   parseButtons();
 
   tick_counter++;
-  if(tick_counter % 20 == 0)
+
+  if(tick_counter < 5)
+  {
+    slow_blink = true;
+  }
+  else
+  {
+    slow_blink = false;
+  }
+
+  if (tick_counter == 20)
   {
     blink_phase = !blink_phase;
+
+
+    tick_counter = 0;
   }
 }
 
+
 void PanelScanner::clearAllLED()
 {
-  for(uint32_t i = 0; i < NUM_PANELS; i++)
+  for (uint32_t i = 0; i < NUM_PANELS; i++)
   {
+    led_half_buffer[i] = 0;
     led_background_buffer[i] = 0;
     led_blinking_buffer[i] = 0;
     led_overlay_buffer[i] = 0;
   }
 }
+
+
+void PanelScanner::setHalfLED(uint32_t num, bool on)
+{
+  uint32_t byte_idx, bit_num;
+
+#if 0
+  Serial.print("set half: ");
+  Serial.print(num);
+  Serial.print(" ");
+  Serial.println(on);
+#endif
+
+  if (!on)
+  {
+    clearHalfLED(num);
+    return;
+  }
+
+  // Funny math at play here.
+  // LEDs are out of order WRT the buttons...the first bit shifted in is the
+  // last bit shifted out on the SPI ring.
+  // So we'll flop that around here by doing the shifting and indexing
+  // math from the top down, rather than bottom up.
+
+  if (num < (NUM_PANELS * 8))
+  {
+    byte_idx = NUM_PANELS - 1 - (num / 8);
+    bit_num = num % 8;
+
+    led_half_buffer[byte_idx] |= 0x80 >> bit_num;
+  }
+}
+
+void PanelScanner::clearHalfLED(uint32_t num)
+{
+  uint32_t byte_idx, bit_num;
+
+  // see note above.
+
+  if (num < (NUM_PANELS * 8))
+  {
+    byte_idx = NUM_PANELS - 1 - (num / 8);
+    bit_num = num % 8;
+
+    led_half_buffer[byte_idx] &= ~(0x80 >> bit_num);
+  }
+}
+
+void PanelScanner::clearAllHalfLEDs()
+{
+  for (uint32_t i = 0; i < NUM_PANELS; i++)
+  {
+    led_half_buffer[i] = 0;
+  }
+}
+
 
 
 void PanelScanner::setBackgroundLED(uint32_t num, bool on)
@@ -75,21 +149,21 @@ void PanelScanner::setBackgroundLED(uint32_t num, bool on)
   Serial.println(on);
 #endif
 
-  if(!on)
+  if (!on)
   {
     clearBackgroundLED(num);
     return;
   }
 
   // Funny math at play here.
-  // LEDs are out of order WRT the buttons...the first bit shifted in is the 
+  // LEDs are out of order WRT the buttons...the first bit shifted in is the
   // last bit shifted out on the SPI ring.
   // So we'll flop that around here by doing the shifting and indexing
   // math from the top down, rather than bottom up.
-  
-  if(num < (NUM_PANELS*8))
+
+  if (num < (NUM_PANELS * 8))
   {
-    byte_idx = NUM_PANELS - 1 -(num / 8);
+    byte_idx = NUM_PANELS - 1 - (num / 8);
     bit_num = num % 8;
 
     led_background_buffer[byte_idx] |= 0x80 >> bit_num;
@@ -101,10 +175,10 @@ void PanelScanner::clearBackgroundLED(uint32_t num)
   uint32_t byte_idx, bit_num;
 
   // see note above.
-  
-  if(num < (NUM_PANELS*8))
+
+  if (num < (NUM_PANELS * 8))
   {
-    byte_idx = NUM_PANELS - 1 -(num / 8);
+    byte_idx = NUM_PANELS - 1 - (num / 8);
     bit_num = num % 8;
 
     led_background_buffer[byte_idx] &= ~(0x80 >> bit_num);
@@ -113,7 +187,7 @@ void PanelScanner::clearBackgroundLED(uint32_t num)
 
 void PanelScanner::clearAllBackgroundLEDs()
 {
-    for(uint32_t i = 0; i < NUM_PANELS; i++)
+  for (uint32_t i = 0; i < NUM_PANELS; i++)
   {
     led_background_buffer[i] = 0;
   }
@@ -129,21 +203,21 @@ void PanelScanner::setBlinkingLED(uint32_t num, bool on)
   Serial.println(num);
 #endif
 
-  if(!on)
+  if (!on)
   {
     clearBlinkingLED(num);
     return;
   }
 
   // Funny math at play here.
-  // LEDs are out of order WRT the buttons...the first bit shifted in is the 
+  // LEDs are out of order WRT the buttons...the first bit shifted in is the
   // last bit shifted out on the SPI ring.
   // So we'll flop that around here by doing the shifting and indexing
   // math from the top down, rather than bottom up.
-  
-  if(num < (NUM_PANELS*8))
+
+  if (num < (NUM_PANELS * 8))
   {
-    byte_idx = NUM_PANELS - 1 -(num / 8);
+    byte_idx = NUM_PANELS - 1 - (num / 8);
     bit_num = num % 8;
 
     led_blinking_buffer[byte_idx] |= 0x80 >> bit_num;
@@ -155,10 +229,10 @@ void PanelScanner::clearBlinkingLED(uint32_t num)
   uint32_t byte_idx, bit_num;
 
   // see note above.
-  
-  if(num < (NUM_PANELS*8))
+
+  if (num < (NUM_PANELS * 8))
   {
-    byte_idx = NUM_PANELS - 1 -(num / 8);
+    byte_idx = NUM_PANELS - 1 - (num / 8);
     bit_num = num % 8;
 
     led_blinking_buffer[byte_idx] &= ~(0x80 >> bit_num);
@@ -170,7 +244,7 @@ void PanelScanner::clearAllBlinkingLEDs()
 #if 0
   Serial.println("Clear all blinking");
 #endif
-  for(uint32_t i = 0; i < NUM_PANELS; i++)
+  for (uint32_t i = 0; i < NUM_PANELS; i++)
   {
     led_blinking_buffer[i] = 0;
   }
@@ -187,14 +261,14 @@ void PanelScanner::setOverlayLED(uint32_t num)
 #endif
 
   // Funny math at play here.
-  // LEDs are out of order WRT the buttons...the first bit shifted in is the 
+  // LEDs are out of order WRT the buttons...the first bit shifted in is the
   // last bit shifted out on the SPI ring.
   // So we'll flop that around here by doing the shifting and indexing
   // math from the top down, rather than bottom up.
-  
-  if(num < (NUM_PANELS*8))
+
+  if (num < (NUM_PANELS * 8))
   {
-    byte_idx = NUM_PANELS - 1 -(num / 8);
+    byte_idx = NUM_PANELS - 1 - (num / 8);
     bit_num = num % 8;
 
     led_overlay_buffer[byte_idx] |= 0x80 >> bit_num;
@@ -206,10 +280,10 @@ void PanelScanner::clearOverlayLED(uint32_t num)
   uint32_t byte_idx, bit_num;
 
   // see note above.
-  
-  if(num < (NUM_PANELS*8))
+
+  if (num < (NUM_PANELS * 8))
   {
-    byte_idx = NUM_PANELS - 1 -(num / 8);
+    byte_idx = NUM_PANELS - 1 - (num / 8);
     bit_num = num % 8;
 
     led_overlay_buffer[byte_idx] &= ~(0x80 >> bit_num);
@@ -218,29 +292,29 @@ void PanelScanner::clearOverlayLED(uint32_t num)
 
 void PanelScanner::clearAllOverlayLEDs()
 {
-  for(uint32_t i = 0; i < NUM_PANELS; i++)
+  for (uint32_t i = 0; i < NUM_PANELS; i++)
   {
     led_overlay_buffer[i] = 0;
   }
-  
+
 }
 
 
 void PanelScanner::parseButtons()
 {
   uint8_t diff;
-  
-  for(uint32_t i = 0; i < NUM_PANELS; i++)
+
+  for (uint32_t i = 0; i < NUM_PANELS; i++)
   {
     // in each byte, see if anything changed from last invocation
     diff = new_buttons[i] ^ old_buttons[i];
-    
-    for(uint32_t j = 0, mask = 0x01; j < 8; j++, mask<<=1)
+
+    for (uint32_t j = 0, mask = 0x01; j < 8; j++, mask <<= 1)
     {
-      if(diff & mask)
+      if (diff & mask)
       {
-          //Serial.println(new_buttons[i]);
-          theEditor.receiveKey((i*8)+j, (new_buttons[i] & mask));
+        //Serial.println(new_buttons[i]);
+        theEditor.receiveKey((i * 8) + j, (new_buttons[i] & mask));
       }
     }
 
@@ -268,22 +342,35 @@ void PanelScanner::dumpLEDs()
 void PanelScanner::doTransaction()
 {
   uint32_t i;
+  //static uint32_t count = 0;
   uint8_t trans_buffer[NUM_PANELS];
-  
-  for(i = 0; i < NUM_PANELS; i++)
+
+  //count++;
+
+  for (i = 0; i < NUM_PANELS; i++)
   {
-    trans_buffer[i] = led_background_buffer[i] ^ led_overlay_buffer[i];
+    if (slow_blink)
+    {
+      trans_buffer[i] = led_half_buffer[i];
+    }
+    else
+    {
+      trans_buffer[i] = 0;
+    }
+
+    trans_buffer[i] |= led_background_buffer[i];
+    trans_buffer[i] ^= led_overlay_buffer[i];
 
     // Blinking supersedes static state...if blinking, it should blink,
     // regardless of underlying static setting.
-    if(blink_phase)
+    if (blink_phase)
     {
       trans_buffer[i] |= led_blinking_buffer[i];
     }
     else
     {
       trans_buffer[i] &= ~led_blinking_buffer[i];
-      
+
     }
   }
 
@@ -300,9 +387,9 @@ void PanelScanner::doTransaction()
   SPI.endTransaction();
 
 
-  for(i = 0; i < NUM_PANELS; i++)
+  for (i = 0; i < NUM_PANELS; i++)
   {
-    // Button lines are pulled high by resistors, shorted 
+    // Button lines are pulled high by resistors, shorted
     // to ground when button is pressed.
     // Invert what we read to make active high
     new_buttons[i] = ~trans_buffer[i];

@@ -18,6 +18,10 @@ public:
 
   void clearAllLED();
 
+  void setHalfLED(uint32_t num, bool on = true);
+  void clearHalfLED(uint32_t num);
+  void clearAllHalfLEDs();
+
   void setBackgroundLED(uint32_t num, bool on = true);
   void clearBackgroundLED(uint32_t num);
   void clearAllBackgroundLEDs();
@@ -43,17 +47,16 @@ private:
 
   // internal data
 
+  uint8_t led_half_buffer[NUM_PANELS];
   uint8_t led_background_buffer[NUM_PANELS];
-  //uint32_t junk1;
   uint8_t led_blinking_buffer[NUM_PANELS];
-  //uint32_t junk2;
   uint8_t led_overlay_buffer[NUM_PANELS];
-  //uint32_t junk3;
   uint8_t old_buttons[NUM_PANELS];
   uint8_t new_buttons[NUM_PANELS];
 
   uint32_t tick_counter;
   bool     blink_phase;
+  bool     slow_blink;
 
 };
 
