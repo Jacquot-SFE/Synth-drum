@@ -32,6 +32,7 @@ void AudioSynthDecay::noteOn(int16_t topval)
   //Serial.println("Decay noteOn");
 //  __disable_irq();
 
+  env_lin_current = (topval << 16);
   
 //  __enable_irq();
 }
