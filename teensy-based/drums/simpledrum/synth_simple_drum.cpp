@@ -24,22 +24,20 @@
  * THE SOFTWARE.
  */
 
-
-//#include <arm_math.h>
-
 #include "synth_simple_drum.h"
 
 extern "C" {
 extern const int16_t AudioWaveformSine[257];
 }
 
-void AudioSynthSimpleDrum::noteOn(void)
+void AudioSynthSimpleDrum::noteOn(int16_t topval)
 {
   __disable_irq();
 
   wav_phasor = 0;
   wav_phasor2 = 0;
-  env_lin_current = 0x7fff0000;
+
+  env_lin_current = (topval << 16);
   
   __enable_irq();
 }

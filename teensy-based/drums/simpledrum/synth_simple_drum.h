@@ -43,7 +43,7 @@ public:
     wav_amplitude1 = 0x7fff;
     wav_amplitude2 = 0;
   }
-  void noteOn();
+  void noteOn(int16_t topval = 0x7fff);
 
   void frequency(float freq)
   {
@@ -89,7 +89,6 @@ private:
   
   uint32_t wav_increment;
   int32_t  wav_pitch_mod;
-
 };
 
 #endif
