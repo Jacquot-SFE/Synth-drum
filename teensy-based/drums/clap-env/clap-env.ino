@@ -39,7 +39,7 @@ void updateParams()
   uint16_t value;
   
   value = analogRead(A3);
-  decay2.length(value);
+  //decay2.length(value);
 
 
 }
@@ -57,12 +57,12 @@ void setup() {
   sgtl5000_1.enable();
   sgtl5000_1.volume(0.5);
 
-  decay1.verbLength(30);
+  decay2.length(255);
 
   mix.gain(0, 0.5);
   mix.gain(1, 0.2);
 
-  noisefilt.setLowpass(0, 5000, 0.4);
+  noisefilt.setLowpass(0, 7500, 0.4);
 
   noise1.amplitude(0.5);
 
