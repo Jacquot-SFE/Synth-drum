@@ -11,6 +11,8 @@
 
 AudioSynthWaveform   gen;
 AudioSynthWaveform   lfo;
+AudioSynthWaveformDc  dc;
+AudioMixer4          mixer;
 AudioFilterKarlsen   filter;
 AudioEffectEnvelope  vca;
 
@@ -21,10 +23,12 @@ AudioControlSGTL5000 sgtl5000_1;
 /***************/
 
 AudioConnection     patchCord01(gen, 0, filter, 0);
-AudioConnection     patchCord02(lfo, 0, filter, 1);
-AudioConnection     patchCord03(filter, 0, vca, 0);
-AudioConnection     patchCord04(vca, 0, i2s1, 0);
-AudioConnection     patchCord05(vca, 0, i2s1, 1);
+AudioConnection     patchCord02(lfo, 0, mixer, 0);
+AudioConnection     patchCord03(dc, 0, mixer, 1);
+AudioConnection     patchCord04(mixer, 0, filter, 1);
+AudioConnection     patchCord05(filter, 0, vca, 0);
+AudioConnection     patchCord06(vca, 0, i2s1, 0);
+AudioConnection     patchCord07(vca, 0, i2s1, 1);
 
 /***************/
 
@@ -70,6 +74,9 @@ uint16_t param_update()
   filter.cutoff((value<<5) + 1); //+100);
   //filter.cutoff((value * 10.0)+20);
 
+  value = analogRead(A3);
+  dc.amplitude((float)value / 0x3ff,2);
+  
   return (value);
 }
 
@@ -89,12 +96,12 @@ void setup() {
   //gen.begin(WAVEFORM_SQUARE);
 
   lfo.frequency(.50);
-  lfo.amplitude(0.5); // amplitude of 1 means 2 octaves peak-peak
+  lfo.amplitude(0.0); // amplitude of 1 means 2 octaves peak-peak
   lfo.begin(WAVEFORM_SINE);
   //lfo.begin(WAVEFORM_SQUARE);
   //lfo.begin(WAVEFORM_SAWTOOTH);
 
-  filter.octaveControl(0.0);
+  filter.octaveControl(6.99);
 
   vca.attack(50);
   vca.decay(250);
@@ -131,7 +138,7 @@ void loop() {
     switch (count % 4)
     {
       case 0:
-        gen.frequency(66);
+        gen.frequency(40);//66);
         gen.phase(0);
         vca.noteOn();
 
@@ -143,7 +150,7 @@ void loop() {
         break;
 
       case 2:
-        gen.frequency(100);
+        gen.frequency(50);//100);
         gen.phase(0);
         vca.noteOn();
 

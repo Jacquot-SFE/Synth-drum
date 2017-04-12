@@ -1,7 +1,7 @@
 /* Cosmic-delay demo sketch.
  *  
- * A tape-delay inspired delay sketch, with heavy filterion and 
- * subtle dostortion in the feedback loop.
+ * A tape-delay inspired delay sketch, with heavy filtering and 
+ * subtle distortion in the feedback loop.
  *  
  * Copyright (c) 2016, Byron Jacquot, SparkFun Electronics
  * SparkFun code, firmware, and software is released under 

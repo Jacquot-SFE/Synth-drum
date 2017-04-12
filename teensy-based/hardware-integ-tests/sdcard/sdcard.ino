@@ -4,6 +4,9 @@
 File fd;
 char fname[] = "test.txt";
 const uint8_t sd_chipsel = 10;
+static const int32_t CHIPSEL_BTNS = 8;
+static const int32_t CHIPSEL_LEDS = 5;
+
 
 uint16_t testdataout[128];
 uint16_t testdatain[128];
@@ -25,14 +28,17 @@ void setup()
   Serial.print("Testdata sizeof: ");
   Serial.println(sizeof(testdataout));
 
+  // prevent the shift registers from trying to talk SPI
+  // when we access card?
+  pinMode(CHIPSEL_BTNS, OUTPUT);
+  digitalWrite(CHIPSEL_BTNS, LOW);
+  pinMode(CHIPSEL_LEDS, OUTPUT);
+  digitalWrite(CHIPSEL_LEDS, LOW);
+
   // config SPI to alternate pins to avoid I2S
   SPI.setSCK(14);
   SPI.setMOSI(7);
   
-  pinMode(sd_chipsel, OUTPUT);
-  digitalWrite(sd_chipsel, HIGH);
-
-
 
   Serial.println("Start card init.");
 

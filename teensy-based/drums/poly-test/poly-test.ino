@@ -15,7 +15,7 @@
 // Appp construct singletons
 PanelScanner theScanner;
 Editor       theEditor;
-Pattern      thePattern; // TBD: multidimensional...
+Pattern      thePattern; 
 Player       thePlayer;
 
 

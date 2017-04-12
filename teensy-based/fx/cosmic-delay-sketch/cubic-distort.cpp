@@ -6,6 +6,8 @@
  * Implements the function:
  * output = input - (1/n*(input^3))
  * 
+ * See shaper1.ods for a plotted transfer curve.
+ * 
  * Which is a gradual s-shaped input:output transfer characteristic
  * for soft clipping.
  * 
